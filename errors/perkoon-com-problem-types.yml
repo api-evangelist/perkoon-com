@@ -1,0 +1,114 @@
+generated: '2026-09-19'
+method: searched
+format: mixed (HTTP status + Retry-After on REST; NDJSON error events + exit codes on the CLI; isError text blocks on MCP; JSON-RPC 2.0 declared for A2A but not observed)
+source: >-
+  https://perkoon.com/llms.txt (Rate Limits, CSRF note, exit codes), https://perkoon.com/.well-known/agent-card.json
+  (rateLimits.onExceeded), the perkoon 0.5.7 README/AGENTS.md (exit codes, JSON error event), the @perkoon/mcp 0.3.0
+  source (isError paths, refusal messages) and the perkoon-transfer 1.1.0 SKILL.md (429 -> exit 3 caveat). No error
+  was provoked live: robots.txt disallows /api/ and /a2a answered a Cloudflare challenge.
+description: >-
+  Perkoon documents its failure modes per transport rather than as one catalog. The REST layer documents exactly one
+  error precisely - 429 Too Many Requests with Retry-After - and one browser-pipeline error, 403 InvalidCSRFTokenError
+  on POST /create without a CSRF token. The CLI, which is what the MCP server and the Agent Skill actually run, has the
+  richest and most machine-readable error surface: a terminal {"event":"error","message":…,"exit_code":…} NDJSON event
+  plus six deterministic exit codes. The MCP wrapper converts those into isError text blocks and adds its own
+  pre-flight refusals (path policy, file not found, invalid code format, concurrency cap). The one documented gap is
+  called out by the provider itself: a 429 currently surfaces in the CLI as the generic exit code 3, before
+  session_created, so agents must infer rate limiting from timing.
+envelope:
+  rest:
+    shape: 'HTTP status; on 429 a Retry-After header (seconds) and a JSON body carrying retry_after (same value). Other REST error bodies are not documented.'
+    content_type: application/json
+  cli:
+    shape: '{"event":"error","message":<string>,"exit_code":<0-5>} as the last NDJSON line on stdout (with --json), then process exit with that code'
+  mcp:
+    shape: '{content:[{type:"text",text:<message>}], isError:true}'
+  a2a:
+    shape: 'JSON-RPC 2.0 error object (declared by preferredTransport JSONRPC; not observed - endpoint challenged)'
+problem_types:
+- code: 429
+  title: Too Many Requests (per-IP rate limit)
+  surface: rest, a2a
+  http_status: 429
+  headers: {Retry-After: seconds}
+  body: {retry_after: seconds}
+  triggers: '>10 session creates/min (or any /a2a POST), >30 joins/min, >20 status checks/min per IP, 60s sliding window'
+  remediation: 'Wait Retry-After seconds, then retry; pace batch sends; note that clients behind a shared egress IP share one budget.'
+  cli_mapping: 'surfaces as exit_code 3 before session_created (SKILL.md caveat)'
+  mcp_mapping: 'send_file / receive_file return isError with a "Too many requests" message; transient, wait ~60s'
+  source: agent card rateLimits.onExceeded; llms.txt; @perkoon/mcp README; SKILL.md
+- code: 403
+  title: InvalidCSRFTokenError (browser pipeline)
+  surface: browser
+  http_status: 403
+  triggers: POST /create without a _csrf_token read from a prior page's <meta name="csrf-token">, or without the session cookie
+  remediation: 'Load https://perkoon.com/ first in the same browser context, read the meta tag, send _csrf_token in the form body; cookie-less agents should use POST /a2a instead.'
+  source: llms.txt "Note on CSRF"
+- code: 403
+  title: Cloudflare managed challenge (edge)
+  surface: edge
+  http_status: 403
+  headers: {cf-mitigated: challenge}
+  triggers: Non-browser requests to HTML routes and to POST /a2a (observed 2026-09-19 with curl, with and without a browser User-Agent)
+  remediation: 'Not an application error and not documented by the provider; the agent card, llms.txt and robots.txt are exempt and are the intended machine entry points. Recorded because it is the first thing a non-browser agent meets on /a2a.'
+  source: probe (this pass)
+- code: exit 1
+  title: Usage error (bad arguments)
+  surface: cli
+  remediation: Check command syntax; see cli/perkoon-com-cli.yml.
+  source: perkoon README exit codes
+- code: exit 2
+  title: File error (not found, not a file)
+  surface: cli
+  remediation: Use an absolute path to an existing regular file.
+  source: perkoon README exit codes
+- code: exit 3
+  title: Network/session error
+  surface: cli
+  remediation: 'Retry after a back-off; if it fails fast right after several sessions, treat as rate limiting (429) and back off ~30s.'
+  source: perkoon README exit codes; SKILL.md
+- code: exit 4
+  title: Auth error (wrong password, access denied)
+  surface: cli
+  remediation: Supply the session password set by the sender (--password); for --session hand-off, the correct --sender-key.
+  source: perkoon README exit codes
+- code: exit 5
+  title: Timeout (no peer connected - P2P mode only)
+  surface: cli
+  remediation: 'Increase --timeout (skill recommends 1800) or make sure the receiver opens the share URL; the session code from session_created is still reported so the receiver command can be re-issued. Relay sends never wait.'
+  mcp_mapping: 'send_file returns isError with "Transfer timed out — no receiver connected." plus the session code, URL and the receiver command'
+  source: perkoon README exit codes; @perkoon/mcp src/index.js
+- code: mcp-refused-path
+  title: 'Refused: <path> is a system path / contains sensitive directory / is outside home directory and working directory'
+  surface: mcp
+  triggers: 'file_path or output_dir resolving under /etc/, /proc/, /sys/, /dev/, or containing /.ssh/, /.gnupg/, /.aws/, /.config/, or (non-Windows) outside $HOME and the cwd; null bytes in the path'
+  remediation: Send files from the home directory or working directory only.
+  source: '@perkoon/mcp src/index.js validatePath()'
+- code: mcp-file-not-found
+  title: 'File not found: <path>'
+  surface: mcp
+  source: '@perkoon/mcp src/index.js'
+- code: mcp-invalid-session-code
+  title: 'Invalid session code format: "<code>". Codes are 12 alphanumeric characters.'
+  surface: mcp
+  triggers: check_session with a code not matching ^[A-Z0-9]{12}$ after upper-casing
+  source: '@perkoon/mcp src/index.js'
+- code: mcp-session-not-found
+  title: 'Session <CODE>: not found (may have expired or never existed)'
+  surface: mcp
+  triggers: 'non-2xx from GET /api/v1/sessions/<CODE>/status'
+  note: returned as a normal (non-error) text block
+  source: '@perkoon/mcp src/index.js'
+- code: mcp-too-many-concurrent
+  title: 'Too many concurrent transfers (max 5). Wait for one to finish.'
+  surface: mcp
+  source: '@perkoon/mcp src/index.js MAX_CONCURRENT'
+browser_events:
+  note: For Playwright receivers llms.txt documents a DOM error event rather than an HTTP error.
+  event: perkoon:file:error
+  codes: [BROWSER_UNSUPPORTED, INSUFFICIENT_STORAGE]
+  remediation: 'For storage failures, fall back to cloud relay (A2A skill).'
+not_observed:
+- REST error bodies other than 429 (e.g. 404 for an unknown session, 4xx validation on create) - not documented and not probed (robots.txt disallows /api/).
+- A2A JSON-RPC error objects - endpoint challenged.
+- Any live 429 - not provoked.

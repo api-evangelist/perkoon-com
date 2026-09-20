@@ -1,0 +1,93 @@
+generated: '2026-09-19'
+method: probed
+source: https://perkoon.com/.well-known/agent-card.json
+description: >-
+  A2A Agent Card for "Perkoon — Agent Data Layer", served by Perkoon (MB "Perkunu simtas", Lithuania) from its own
+  registrable domain. The identical 4,756-byte body is served at the canonical /.well-known/agent-card.json and the
+  legacy /.well-known/agent.json (byte-compared 2026-09-19); www.perkoon.com 301s both paths to the apex. The body is
+  saved verbatim to perkoon-com-agent-card.json and nothing here is derived or generated. The card is provider-published
+  by construction and is what a2aregistry.org lists (the source of this provider's harvest). Notably, the card and the
+  llms.txt are served to plain HTTP clients while every HTML page on the site (including the documentationUrl
+  /automate and the JSON-RPC endpoint /a2a itself) answers a Cloudflare managed challenge (HTTP 403, cf-mitigated:
+  challenge) to curl, with or without a browser User-Agent - so the discovery document is reachable by an agent but
+  the task endpoint was not reachable from this probe.
+discovery:
+  path: /.well-known/agent-card.json
+  canonical: true
+  host: perkoon.com
+  also_served_at:
+  - {url: https://perkoon.com/.well-known/agent.json, status: 200, note: legacy pre-0.3 path, byte-identical (cmp)}
+  - {url: https://www.perkoon.com/.well-known/agent-card.json, status: 301, note: redirects to the apex canonical path}
+  - {url: https://www.perkoon.com/.well-known/agent.json, status: 301, note: redirects to the apex legacy path}
+  negative_control: /.well-known/perkoon-negative-control-7f3ab91c.json returned a real 404 (HTML 404 page, status 404), so the 200s are real routes and not an SPA catch-all
+  advertised_by:
+  - {url: https://perkoon.com/robots.txt, note: 'comment block "AI Agents & Operators Welcome" names the agent card, llms.txt and the agent guide'}
+  - {url: https://perkoon.com/llms.txt, note: '"Agent Card: https://perkoon.com/.well-known/agent.json"'}
+conformance:
+  spec: A2A 1.0.0
+  grade: conformant
+  protocol_version: 0.3.0
+  preferred_transport: JSONRPC
+  deviations:
+  - no-securitySchemes-or-security-declared
+  - no-additionalInterfaces
+  - non-standard-top-level-fields (extensions, rateLimits, resources)
+  checks:
+    capabilities_is_object: true
+    protocolVersion_present: true
+    skills_is_array: true
+    preferredTransport_present: true
+    defaultInputModes_present: true
+    defaultOutputModes_present: true
+    provider_present: true
+    documentationUrl_present: true
+  note: >-
+    Passes every hard check. The three non-standard top-level fields are additive: `extensions` documents an optional
+    clientCapabilities DataPart, `rateLimits` states the per-IP budgets (10 creates / 30 joins / 20 status checks per
+    60s, 429 + Retry-After), and `resources` lists the MCP package, CLI package, browser entry point, Claude skill and
+    the automation guide. A strict A2A 1.0.0 client ignores them; an agent that reads them gets the rate-limit signal
+    and the four alternative entry points, which is more than most conformant cards carry.
+card:
+  name: Perkoon — Agent Data Layer
+  description: >-
+    File transfer for humans and the things replacing them. Small files get free cloud delivery — a durable share link
+    with no receiver needed (fire-and-forget). Larger files transfer directly between machines over WebRTC with no size
+    limit. No accounts.
+  url: https://perkoon.com/a2a
+  version: 1.5.0
+  provider: Perkoon (https://perkoon.com)
+  documentation_url: https://perkoon.com/automate
+  authentication: none declared (no securitySchemes / security fields; llms.txt says "No accounts")
+  capabilities: {streaming: false, pushNotifications: false, stateTransitionHistory: false, multiTurn: false}
+  default_input_modes: [application/json]
+  default_output_modes: [application/json]
+  skills: 4
+  skill_ids: [describe, send-files, receive-files, session-status]
+  skill_names: [Describe Capabilities, Send Files, Receive Files, Session Status]
+  resources_declared:
+  - {type: mcp-server, url: https://www.npmjs.com/package/@perkoon/mcp, note: 'npx -y @perkoon/mcp (stdio)'}
+  - {type: cli-tool, url: https://www.npmjs.com/package/perkoon}
+  - {type: http-entry-point, url: https://perkoon.com/create, method: POST, note: browser pipeline; requires CSRF token + session cookie}
+  - {type: claude-skill, url: https://perkoon.com/skills/perkoon/SKILL.md}
+  - {type: documentation, url: https://perkoon.com/automate}
+  file: perkoon-com-agent-card.json
+task_endpoint:
+  url: https://perkoon.com/a2a
+  transport: JSON-RPC 2.0 over HTTPS POST (card preferredTransport JSONRPC; llms.txt "POST https://perkoon.com/a2a with JSON-RPC 2.0")
+  observed: >-
+    POST {"jsonrpc":"2.0","id":1,"method":"agent/getAuthenticatedExtendedCard"} returned HTTP 403 text/html with
+    cf-mitigated: challenge (Cloudflare managed challenge, "Just a moment...") both with curl's default User-Agent and
+    with a Chrome User-Agent; GET /a2a returned the same. No message/send was attempted: every JSON-RPC POST to /a2a
+    counts against the 10/min create budget and send-files creates a real session. Whether an agent with a
+    Cloudflare-cleared browser context can reach the endpoint was not tested; the challenge is not evaded.
+  rate_limits: see rate-limits/perkoon-com-rate-limits.yml (declared in the card's rateLimits field)
+x-evidence:
+  fetched: '2026-09-19'
+  url: https://perkoon.com/.well-known/agent-card.json
+  http_status: 200
+  content_type: application/json; charset=utf-8
+  content_length: 4756
+  server: cloudflare (via 1.1 Caddy; Phoenix app per llms.txt)
+  cache_control: max-age=0, private, must-revalidate
+  hsts: max-age=31536000; includeSubDomains; preload
+  note: Verbatim body saved alongside this manifest. No field inferred.

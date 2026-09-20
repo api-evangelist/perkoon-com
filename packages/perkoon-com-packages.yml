@@ -1,0 +1,76 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  registry.npmjs.org/perkoon, registry.npmjs.org/@perkoon%2Fmcp, registry.npmjs.org/perkoon-transfer and
+  registry.npmjs.org/-/v1/search?text=perkoon (3 results, all publisher perkunas-vienas); pypi.org/pypi/perkoon/json
+  (404); api.github.com/users/perkoon (Organization "Perkoon", created 2025-10-02, 0 public repos);
+  github.com/perkoon/perkoon-transfer (404 - the repository URL in perkoon-transfer's package.json does not resolve);
+  https://perkoon.com/.well-known/agent-card.json resources[] and https://perkoon.com/llms.txt - all 2026-09-19.
+description: >-
+  Three first-party npm packages, all published by the same npm user (perkunas-vienas, zaibas@perkoon.com) with
+  homepage https://perkoon.com and author "Perkoon": the perkoon CLI (which is also an importable JS library -
+  main dist/client.js, `import { TransferManager } from 'perkoon'` per its AGENTS.md), the @perkoon/mcp stdio MCP
+  server, and the perkoon-transfer Agent Skill. All three were released within the past three weeks of this pass,
+  so the SDK-currency signal is fresh. The CLI and MCP packages carry a proprietary licence (MB "Perkunu simtas",
+  Lithuania: use and depend on, no modification or redistribution) and ship compiled/bundled code with no public
+  source repository; the skill package is MIT. No package exists on PyPI, RubyGems, crates.io, Maven, NuGet, Go or
+  Packagist, and the Perkoon GitHub organisation has no public repositories.
+package_count: 3
+official_sdk_count: 1
+packages:
+- language: javascript
+  registry: npm
+  name: perkoon
+  url: https://www.npmjs.com/package/perkoon
+  install: npm install -g perkoon
+  run_without_install: npx -y perkoon@latest send <file> --json
+  official: true
+  kind: [cli, library]
+  version: 0.5.7
+  published: '2026-09-04'
+  first_published: '2026-02-26'
+  release_count: 28
+  license: Proprietary (SEE LICENSE IN LICENSE - Perkoon Proprietary License, MB "Perkunu simtas")
+  source: null
+  bin: perkoon
+  engines: node >=18.0.0
+  dependencies: [mime-types, node-datachannel, phoenix, ws]
+  note: >-
+    The CLI binary and the programmatic API live in one package: package.json main is dist/client.js and the bundled
+    AGENTS.md documents `new TransferManager().send(path)`. Counted as the one official SDK. Distributed as an esbuild
+    bundle; the LICENSE forbids modification and redistribution.
+- language: javascript
+  registry: npm
+  name: '@perkoon/mcp'
+  url: https://www.npmjs.com/package/@perkoon/mcp
+  install: npx -y @perkoon/mcp
+  official: true
+  kind: [mcp-server]
+  version: 0.3.0
+  published: '2026-09-01'
+  first_published: '2026-03-13'
+  release_count: 7
+  license: Proprietary (SEE LICENSE IN LICENSE; no LICENSE file is in the 0.3.0 tarball)
+  source: null
+  bin: perkoon-mcp
+  engines: node >=18.0.0
+  dependencies: ['@modelcontextprotocol/sdk', zod]
+  note: Local stdio MCP server; see mcp/perkoon-com-mcp.yml. Not a client library, so not counted toward official_sdk_count.
+- language: markdown
+  registry: npm
+  name: perkoon-transfer
+  url: https://www.npmjs.com/package/perkoon-transfer
+  install: npx skillpm install perkoon-transfer
+  official: true
+  kind: [agent-skill]
+  version: 1.1.0
+  published: '2026-09-01'
+  first_published: '2026-02-28'
+  release_count: 4
+  license: MIT
+  source: https://github.com/perkoon/perkoon-transfer (declared in package.json; returned 404 on 2026-09-19)
+  note: Agent Skills-format SKILL.md that drives the perkoon CLI; saved verbatim in skills/. Not a client library, so not counted toward official_sdk_count.
+registries_checked_absent:
+- {registry: pypi, name: perkoon, status: 404}
+- {registry: github, org: https://github.com/Perkoon, status: 200, note: organisation exists (created 2025-10-02) with 0 public repositories}
+- {registry: mcp-registry, url: 'https://registry.modelcontextprotocol.io/v0/servers?search=perkoon', result: 0 servers}

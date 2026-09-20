@@ -1,0 +1,150 @@
+# Perkoon
+
+> File transfer for humans and the things replacing them.
+
+Perkoon moves files two ways, picked automatically per send. Small files
+(within the free cloud allotment) get FREE CLOUD DELIVERY: upload once,
+get a durable share link (~48h), exit — no receiver needs to be online.
+Larger files transfer directly between devices via WebRTC (unlimited
+size; the sender process stays alive until the receiver finishes).
+Free. No accounts.
+
+Pick the best method for your environment:
+
+## MCP Server (Best for coding agents — Claude Code, Cursor, Windsurf, VS Code Copilot)
+
+If your host supports MCP, this is the fastest path. Adds send_file, receive_file,
+and check_session as native tools — no shell commands needed.
+
+Install: npx -y @perkoon/mcp (stdio transport)
+
+Configuration for your host:
+- Claude Code: add to .mcp.json → { "mcpServers": { "perkoon": { "command": "npx", "args": ["-y", "@perkoon/mcp"] } } }
+- Claude Desktop: add to claude_desktop_config.json → same format as above
+- Cursor / VS Code: Settings → MCP → Add Server → npx -y @perkoon/mcp
+
+Once configured, just call send_file({ file_path: "/absolute/path/to/file.pdf" }) — done.
+Small files return a durable share link immediately (fire-and-forget);
+larger files block until a receiver connects. Optional mode: 'auto' | 'relay' | 'p2p'.
+
+## CLI (For agents with shell access but no MCP support)
+
+npx -y perkoon@latest send /absolute/path/to/file.pdf --json    # Returns JSONL events
+npx -y perkoon@latest receive SESSION_CODE --json                # Receives files
+
+Send is fire-and-forget for small files: within the free cloud allotment the CLI
+uploads to free cloud delivery, prints {"event":"relay_complete","share_url":...}
+and exits 0 — the link stays valid ~48h, no receiver needed. Larger files stream
+direct P2P ({"event":"transfer_complete"}) and the process must stay alive until
+the receiver finishes. Flags: --relay (force cloud, errors if unavailable),
+--p2p / --wait (force direct streaming).
+
+Exit codes: 0=success, 1=usage, 2=file, 3=network, 4=auth, 5=timeout
+Use absolute paths. Requires Node.js 18+. Zero install — npx downloads on first run.
+
+## A2A Protocol (For agents with HTTP but no shell access)
+
+POST https://perkoon.com/a2a with JSON-RPC 2.0. Returns browser URLs + CLI commands.
+If you cannot run shell commands, create a session and share the sender_url with your user.
+Agent Card: https://perkoon.com/.well-known/agent.json
+
+## Browser (No shell, no HTTP POST — tell your user)
+
+Tell your user to visit https://perkoon.com/create — they drop files, get a 12-character code,
+and share that code with the recipient. The recipient opens https://perkoon.com/CODE to receive.
+
+## Browser Automation (Playwright/Puppeteer)
+
+Canonical entry: POST https://perkoon.com/create with form fields:
+  session[tos_accepted]=true
+  session[source]=agent_browser    (use agent_skill instead if attributing to SKILL.md discovery)
+Returns 302 to /<SESSION_CODE> with TOS auto-accepted. No LiveView gate appears.
+
+Source attribution by transport:
+  - /create                → agent_browser   (Playwright/Puppeteer)
+  - /api/v1/sessions       → agent_cli       (default; MCP wrapper sends agent_mcp)
+  - /a2a                   → agent_a2a       (always)
+  - any of the above       → agent_skill     (override for skill-discovery attribution)
+
+Note on CSRF: /create lives in the browser pipeline (Phoenix protect_from_forgery).
+The browser context's session cookie alone is NOT enough — you must read the
+<meta name="csrf-token"> value from any prior page load and pass it as
+`_csrf_token` in the form body. Without it: 403 InvalidCSRFTokenError.
+For cookie-less curl/MCP/script agents, use POST /a2a (JSON-RPC) instead — no CSRF.
+
+### Sender
+1. Navigate to https://perkoon.com/ first to seed cookie + read CSRF token:
+     await page.goto('https://perkoon.com/');
+     const csrf = await page.locator('meta[name="csrf-token"]').getAttribute('content');
+2. POST https://perkoon.com/create with form { _csrf_token: csrf, 'session[tos_accepted]': 'true',
+   'session[source]': 'agent_browser' } and maxRedirects: 0. Read 'location' header → session code.
+3. Navigate to https://perkoon.com/<SESSION_CODE>?agent=true
+4. Wait for [data-testid="p2p-session"] to be visible — main wrapper, has data-session-code attr.
+5. Wait for LiveSocket connect: page.waitForFunction(() => window.liveSocket?.isConnected())
+   — without this the file-input phx-hook silently no-ops because the WebSocket isn't ready.
+6. Add files: page.setInputFiles('[data-testid="file-input"]', filePath)
+7. Click [data-testid="send-transfer"] to seal the session and start the transfer.
+8. Wait: page.waitForFunction(() => window.__perkoon?.transfer?.status === 'complete', null, { timeout: 600000 })
+
+### Receiver
+1. Navigate to https://perkoon.com/<SESSION_CODE>?agent=true
+   — `?agent=true` skips file pickers and picks the right sink for the file size:
+     * file ≤ OPFS quota (~60-80% free disk) → OPFS
+     * file > quota but ≤ free disk          → Service Worker download (bytes go to OS Downloads; window.__perkoon stream() returns null for these)
+     * file > free disk                      → fail loud (use Cloud Relay)
+2. Wait for and click the incoming-transfer Accept button:
+   [data-testid="transfer-accept"]. It appears once the sender's offer
+   arrives. This is the RECEIVE-side accept — distinct from the sender's
+   session-creation TOS gate [data-testid="tos-accept"]. (Reject is
+   [data-testid="transfer-reject"].)
+     await page.locator('[data-testid="transfer-accept"]')
+       .waitFor({ state: 'visible', timeout: 300000 });
+     await page.locator('[data-testid="transfer-accept"]').click();
+3. Wait for files to be ready:
+   - state:  page.waitForFunction(n => window.__perkoon.files.length >= n, expectedFileCount)
+   - event:  document.addEventListener('perkoon:file:ready', e => ...)
+4. Read bytes via the SINK-AGNOSTIC stream() accessor — works for any file size:
+     const reader = (await file.stream()).getReader();
+     while (true) {
+       const { done, value } = await reader.read();
+       if (done) break;
+       // value is Uint8Array — write/forward as your agent needs
+     }
+     file.release?.();  // free OPFS storage immediately when done
+   Each entry shape: { name, size, status, transferId, method, stream, getFile, release }
+   method ∈ { 'opfs', 'sw-download', 'memory-buffer', 'fsapi' }
+5. Listen for 'perkoon:file:error' — detail.code = 'BROWSER_UNSUPPORTED' or
+   'INSUFFICIENT_STORAGE'. For storage failures, fall back to Cloud Relay (A2A skill).
+6. OPFS TTL is 1h for agents — call file.release() promptly when done so the
+   OPFS file is freed immediately rather than waiting for the timer.
+
+## Ready-to-Run Playwright Scripts (requires: npm install playwright)
+- curl https://perkoon.com/perkoon_send.mjs > send.mjs && node send.mjs /path/to/file.zip
+- curl https://perkoon.com/perkoon_receive.mjs > receive.mjs && node receive.mjs SESSION_CODE ./output
+
+## Rate Limits
+Per IP, sliding 60s window. Buckets are counted by request type on the REST paths:
+  - /api/v1/sessions             → 10 creates / minute
+  - /api/v1/sessions/:code/join  → 30 joins / minute
+  - /api/v1/sessions/:code/status→ 20 status checks / minute
+On /a2a, every JSON-RPC POST (send/receive/status) counts against the 10/minute create budget, regardless of skill.
+Exceeding returns HTTP 429 with a Retry-After header (seconds; also JSON retry_after). Honor it — wait, then retry.
+Limits key on IP, not agent identity: clients behind a shared egress IP (NAT, CI, cloud gateway) share one budget, so pace batch sends.
+
+## Resources
+- [Full Agent Guide](https://perkoon.com/automate): Playwright examples, state API, selectors, ready-to-run scripts
+- [Agent Card](https://perkoon.com/.well-known/agent.json): Machine-readable capabilities (A2A)
+- [MCP Server](https://www.npmjs.com/package/@perkoon/mcp): Native tool integration for coding agents
+- [Claude Skill](https://perkoon.com/skills/perkoon/SKILL.md): Drop-in `skills/perkoon/SKILL.md` for Claude Code / agent skill registries
+- [Pricing](https://perkoon.com/pricing): P2P free forever, cloud storage paid
+
+## Key Concepts
+- State API: window.__perkoon (session, transfer, participants, files)
+- Agent identity: add ?agent=true to session URL
+- Stable selectors: all interactive elements have data-testid attributes
+- Custom events: document listens for perkoon:transfer:*, perkoon:participant:*, perkoon:file:ready
+
+## Pricing
+- Free cloud delivery: files within the free allotment upload once and get a durable ~48h link — fully automated via CLI/MCP (fire-and-forget)
+- P2P: Free forever, unlimited size, one sender to one receiver, sender stays online
+- Cloud storage: Paid plans from https://perkoon.com/pricing for bigger allotments and longer retention

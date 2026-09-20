@@ -1,0 +1,25 @@
+generated: '2026-09-19'
+method: searched
+source: https://registry.npmjs.org/perkoon-transfer (1.1.0, published 2026-09-01, tarball skills/perkoon-transfer/SKILL.md)
+note: >-
+  Perkoon publishes its own Agent Skill and this index records it verbatim - nothing here is generated. The provider
+  ships the skill two ways: at https://perkoon.com/skills/perkoon/SKILL.md (named in the A2A card's resources[] and in
+  llms.txt; answered a Cloudflare managed challenge, HTTP 403, to this probe) and as the npm package perkoon-transfer
+  (MIT, author "Perkoon <zaibas@perkoon.com>", same maintainer as the perkoon CLI and @perkoon/mcp packages, installed
+  with `npx skillpm install perkoon-transfer`). The npm copy is the one saved here. Its frontmatter is Agent Skills
+  format (name, description, allowed-tools: Bash Read) and its body grounds every step in the perkoon CLI's real
+  commands (send, receive), flags, JSON events and exit codes, plus the published per-IP rate limits. There is no
+  OpenAPI, so CLI commands and MCP tool names stand in for operationIds.
+skills:
+- file: perkoon-com-perkoon-transfer-SKILL.md
+  name: perkoon-transfer
+  provider_published: true
+  source: https://www.npmjs.com/package/perkoon-transfer
+  version: 1.1.0
+  published: '2026-09-01'
+  license: MIT
+  api: cli/perkoon-com-cli.yml
+  operations: [perkoon send, perkoon receive]
+  mcp_equivalents: [send_file, receive_file, check_session]
+  a2a_equivalents: [send-files, receive-files, session-status]
+  also_at: {url: https://perkoon.com/skills/perkoon/SKILL.md, status: 403, note: Cloudflare managed challenge; not compared byte-for-byte}

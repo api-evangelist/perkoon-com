@@ -1,0 +1,57 @@
+generated: '2026-09-19'
+method: searched
+source: https://perkoon.com/.well-known/agent-card.json (rateLimits field)
+docs:
+- https://perkoon.com/.well-known/agent-card.json
+- https://perkoon.com/llms.txt
+- https://www.npmjs.com/package/@perkoon/mcp
+- https://www.npmjs.com/package/perkoon-transfer
+limit_count: 4
+summary: >-
+  Perkoon publishes its rate limits in four places that agree with each other, including inside the A2A agent card
+  itself (a non-standard rateLimits field), which is the one place an agent reads before its first call. Limits are
+  per IP over a sliding 60-second window and are bucketed by request type on the REST paths: 10 session creates, 30
+  joins and 20 status checks per minute. On /a2a every JSON-RPC POST - send-files, receive-files and session-status
+  alike - counts against the 10/minute create budget. Exhaustion returns HTTP 429 with a Retry-After header in
+  seconds, mirrored as retry_after in the JSON body. Limits key on IP, not agent identity, so clients behind a shared
+  egress (NAT, CI, cloud gateway) share one budget. The published Agent Skill adds an operational caveat: the CLI
+  currently reports a 429 as exit code 3 (network/session error) before session_created, so a fast exit-3 after
+  several rapid sends should be read as rate limiting. No limit was observed live: robots.txt disallows /api/ (honored)
+  and /a2a answered a Cloudflare challenge, so nothing here is probed.
+rate_limits:
+- scope: per-ip
+  surface: POST /api/v1/sessions (session create; CLI send, MCP send_file)
+  window: 60s sliding
+  limit: 10
+  burst: null
+  source: agent card rateLimits.createsPerMinute; llms.txt Rate Limits
+- scope: per-ip
+  surface: POST /api/v1/sessions/{code}/join (CLI receive, MCP receive_file)
+  window: 60s sliding
+  limit: 30
+  burst: null
+  source: agent card rateLimits.joinsPerMinute; llms.txt Rate Limits
+- scope: per-ip
+  surface: GET /api/v1/sessions/{code}/status (MCP check_session)
+  window: 60s sliding
+  limit: 20
+  burst: null
+  source: agent card rateLimits.statusChecksPerMinute; llms.txt Rate Limits
+- scope: per-ip
+  surface: POST /a2a (every JSON-RPC method - send-files, receive-files, session-status)
+  window: 60s sliding
+  limit: 10
+  burst: null
+  note: shares the create budget regardless of skill; the separate join/status budgets apply only to the REST paths
+  source: agent card rateLimits.a2a
+headers:
+  documented:
+  - {header: Retry-After, unit: seconds, on: 429}
+  body_field: retry_after (same value as Retry-After)
+  observed: []
+  note: Not observed live (no request that could trigger a limit was made). No X-RateLimit-* / RateLimit-* quota headers are documented.
+exhaustion_status: 429
+client_guidance:
+  verbatim: 'llms.txt: "Honor it — wait, then retry."; SKILL.md: "back off ~30s and retry, don''t hammer"'
+  cli_mapping: 'a 429 surfaces as CLI exit_code 3 before session_created (SKILL.md, perkoon-transfer 1.1.0)'
+  mcp_mapping: 'send_file / receive_file may return isError: true with a "Too many requests" message; transient, wait ~60s (README, @perkoon/mcp 0.3.0)'

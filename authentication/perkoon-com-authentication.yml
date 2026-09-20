@@ -1,0 +1,61 @@
+generated: '2026-09-19'
+method: searched
+docs: https://perkoon.com/llms.txt
+source: >-
+  https://perkoon.com/llms.txt, https://perkoon.com/.well-known/agent-card.json, the perkoon 0.5.7 README (--password,
+  --session, --sender-key), the @perkoon/mcp 0.3.0 source (anonymous fetch of /api/v1/sessions/{code}/status), and the
+  /.well-known/ probe in well-known/perkoon-com-well-known.yml - all 2026-09-19. derive-authentication.py was not run:
+  there is no OpenAPI to derive from.
+summary: >-
+  Every machine surface Perkoon publishes is anonymous and account-less ("No accounts" - llms.txt and the agent card).
+  There is no API key, no OAuth authorization server, no OpenID configuration, no protected-resource metadata, no
+  dynamic client registration and no developer sign-up; the A2A card declares no securitySchemes. Access control is
+  per session, not per caller: an optional password set by the sender (CLI --password, MCP password, wrong password ->
+  CLI exit 4), and a sender-key that the A2A send-files skill returns to the session creator so a CLI process can
+  attach as sender (--session <code> --sender-key <key>). The browser entry point /create is the one exception in
+  mechanism, not in identity: it requires a Phoenix session cookie plus a _csrf_token read from a prior page load
+  (without it, 403 InvalidCSRFTokenError), which is anti-forgery, not authentication. The site's edge adds a
+  Cloudflare managed challenge on HTML routes and on /a2a for non-browser clients, which is a bot policy rather than
+  an auth scheme, recorded here because it is what an agent actually meets first.
+schemes:
+- id: none
+  type: none
+  applies_to:
+    rest: [POST /api/v1/sessions, 'POST /api/v1/sessions/{code}/join', 'GET /api/v1/sessions/{code}/status']
+    a2a: [POST /a2a (describe, send-files, receive-files, session-status)]
+    mcp: [send_file, receive_file, check_session]
+    cli: [perkoon send, perkoon receive]
+  detail: No Authorization header, API key, cookie or account is required or documented. Rate limiting keys on IP (see rate-limits/).
+  observed:
+  - {url: https://perkoon.com/.well-known/agent-card.json, method: GET, status: 200, note: no securitySchemes / security field in the card}
+  - {url: 'https://perkoon.com/api/v1/sessions/{code}/status', note: 'called by @perkoon/mcp with a bare fetch() and no headers (src/index.js); not probed live - robots.txt disallows /api/'}
+- id: session-password
+  type: shared-secret (per session)
+  applies_to:
+    cli: ['send --password <pw>', 'receive --password <pw>']
+    mcp: [send_file.password, receive_file.password]
+  detail: 'Optional; set by the sender, required by the receiver to join. Max 512 characters (MCP zod schema). Wrong password -> CLI exit code 4 (Auth error). SKILL.md: "For sensitive files, always use --password — without it, anyone with the share link can download."'
+- id: sender-key
+  type: capability token (per session)
+  applies_to:
+    cli: ['send <file> --session <code> --sender-key <key>']
+    a2a: ['send-files response']
+  detail: Returned to whoever creates a session over A2A; lets a CLI process attach as the sender of that session. Not an account credential.
+- id: csrf-browser-pipeline
+  type: anti-forgery (not authentication)
+  applies_to:
+    browser: ['POST /create']
+  detail: 'Phoenix protect_from_forgery: session cookie + _csrf_token (from <meta name="csrf-token">) required; missing -> 403 InvalidCSRFTokenError. llms.txt directs cookie-less agents to POST /a2a instead.'
+oauth:
+  authorization_server_metadata: {url: https://perkoon.com/.well-known/oauth-authorization-server, status: 404}
+  protected_resource_metadata: {url: https://perkoon.com/.well-known/oauth-protected-resource, status: 404}
+  openid_configuration: {url: https://perkoon.com/.well-known/openid-configuration, status: 404}
+  dynamic_client_registration: false
+  scopes: none - no scopes artifact is written because no OAuth surface exists
+transport_security:
+  tls: TLSv1.3, HSTS max-age=31536000; includeSubDomains; preload (security/perkoon-com-domain-security.yml)
+  p2p: 'WebRTC data channels (DTLS-encrypted per SKILL.md); perkoon.com performs signalling only and "your data never touches our servers" for P2P (README)'
+edge_policy:
+  note: 'Cloudflare managed challenge (HTTP 403, cf-mitigated: challenge) on every HTML route and on POST /a2a for curl with or without a browser User-Agent on 2026-09-19; /.well-known/agent-card.json, /.well-known/agent.json, /llms.txt and /robots.txt are exempt. Not evaded.'
+gated_surfaces:
+  note: robots.txt disallows /api/, /analytics/ and /gx7k9m2p5/ (admin). The /api/ disallow covers the REST session paths the CLI uses; they were not probed live in deference to it, and everything recorded about them is transcribed from the provider's own packages and llms.txt.

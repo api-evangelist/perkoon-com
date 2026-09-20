@@ -1,0 +1,103 @@
+generated: '2026-09-19'
+method: probed
+source: live GET of the named /.well-known/ path list on every host this record knows (perkoon.com, www.perkoon.com). api.perkoon.com, mcp.perkoon.com, docs.perkoon.com and dev.perkoon.com have no DNS A record (the MCP server is a local stdio package and the CLI's default server is https://perkoon.com itself), so there is no separate API, docs or MCP host to probe.
+hit_count: 2
+note: >-
+  Two real documents hit, both the A2A agent card: the canonical /.well-known/agent-card.json and the legacy
+  /.well-known/agent.json, byte-identical (4,756 bytes, application/json); the body is saved to
+  a2a/perkoon-com-agent-card.json. Every other named discovery path - security.txt, openid-configuration,
+  oauth-authorization-server, oauth-protected-resource, api-catalog, ai-plugin.json, mcp.json, webmcp.json, apis.json -
+  returned the site's real 404 (HTML 404 page with status 404, 5,456 bytes). www.perkoon.com 301s every /.well-known/
+  path to the apex. The negative-control path returned 404, so the hits are real routes and not a path-echoing catch-all.
+  Root-level /security.txt and /humans.txt return HTTP 200 with a 13,061-byte HTML "Page Not Found" page (the Phoenix
+  app treats any unknown top-level path as a transfer-session code) - a soft-404, recorded as a miss, not a document.
+  Root-level discovery files that are NOT /.well-known/ documents are indexed below: /llms.txt and /robots.txt are
+  served; /agents.md, /mcp.json, /apis.json, /sitemap.xml and every HTML page answer a Cloudflare managed challenge
+  (HTTP 403, cf-mitigated: challenge) to non-browser clients. No security.txt is served, so no SecurityTxt pointer is
+  emitted; no OAuth surface exists (the A2A card, CLI and MCP server are all anonymous), so the absence of RFC 8414 /
+  RFC 9728 metadata is consistent with the surface rather than a gap in it.
+hosts:
+- host: https://perkoon.com
+  path_echo_control: passed
+  documents:
+  - path: /.well-known/agent-card.json
+    status: 200
+    content_type: application/json; charset=utf-8
+    file: ../a2a/perkoon-com-agent-card.json
+  - path: /.well-known/agent.json
+    status: 200
+    content_type: application/json; charset=utf-8
+    file: ../a2a/perkoon-com-agent-card.json
+    note: legacy pre-0.3 path; byte-identical to agent-card.json
+  - path: /.well-known/security.txt
+    status: 404
+  - path: /security.txt
+    status: 200
+    content_type: text/html; charset=utf-8
+    soft_404: true
+    note: 13,061-byte HTML page titled "Page Not Found" (Phoenix session-code catch-all); not a security.txt document
+  - path: /.well-known/openid-configuration
+    status: 404
+  - path: /.well-known/oauth-authorization-server
+    status: 404
+  - path: /.well-known/oauth-protected-resource
+    status: 404
+  - path: /.well-known/api-catalog
+    status: 404
+  - path: /.well-known/ai-plugin.json
+    status: 404
+  - path: /.well-known/mcp.json
+    status: 404
+  - path: /.well-known/webmcp.json
+    status: 404
+  - path: /.well-known/apis.json
+    status: 404
+  - path: /apis.json
+    status: 403
+    note: 'Cloudflare managed challenge (cf-mitigated: challenge); not a document'
+  - path: /.well-known/perkoon-negative-control-7f3ab91c.json
+    status: 404
+    control: true
+- host: https://www.perkoon.com
+  path_echo_control: passed
+  documents:
+  - path: /.well-known/agent-card.json
+    status: 301
+    redirect: https://perkoon.com/.well-known/agent-card.json
+  - path: /.well-known/agent.json
+    status: 301
+    redirect: https://perkoon.com/.well-known/agent.json
+  - path: /.well-known/security.txt
+    status: 301
+    redirect: https://perkoon.com/.well-known/security.txt
+  - path: /.well-known/openid-configuration
+    status: 301
+    redirect: https://perkoon.com/.well-known/openid-configuration
+  - path: /.well-known/oauth-authorization-server
+    status: 301
+    redirect: https://perkoon.com/.well-known/oauth-authorization-server
+  - path: /.well-known/oauth-protected-resource
+    status: 301
+    redirect: https://perkoon.com/.well-known/oauth-protected-resource
+  - path: /.well-known/api-catalog
+    status: 301
+    redirect: https://perkoon.com/.well-known/api-catalog
+  - path: /.well-known/ai-plugin.json
+    status: 301
+    redirect: https://perkoon.com/.well-known/ai-plugin.json
+unresolved_hosts:
+- {host: api.perkoon.com, dns: none}
+- {host: mcp.perkoon.com, dns: none}
+- {host: docs.perkoon.com, dns: none}
+- {host: dev.perkoon.com, dns: none, note: named in the CLI README as a PERKOON_URL example for local dev; not public}
+root_discovery_files:
+  note: Not /.well-known/ documents, recorded here because they are the provider's own discovery layer and each was fetched live on 2026-09-19.
+  documents:
+  - {path: /llms.txt, status: 200, content_type: 'text/plain; charset=utf-8', content_length: '3982 on the wire (8885 bytes decoded)', file: ../llms/perkoon-com-llms.txt}
+  - {path: /robots.txt, status: 200, content_type: 'text/plain; charset=utf-8', note: 'Allow: /; Sitemap: https://perkoon.com/sitemap.xml; comment block "AI Agents & Operators Welcome" naming the agent card, llms.txt and /automate; Disallow /gx7k9m2p5/, /api/, /analytics/ - the /api/ disallow was honored and the REST session paths were not probed'}
+  - {path: /sitemap.xml, status: 403, note: Cloudflare managed challenge}
+  - {path: /agents.md, status: 403, note: Cloudflare managed challenge}
+  - {path: /mcp.json, status: 403, note: Cloudflare managed challenge}
+  - {path: /skills/perkoon/SKILL.md, status: 403, note: 'Cloudflare managed challenge; the same skill is published on npm as perkoon-transfer 1.1.0 and is saved from there in skills/'}
+  - {path: /automate, status: 403, note: 'Cloudflare managed challenge (the card''s documentationUrl)'}
+  - {path: /pricing, status: 403, note: Cloudflare managed challenge}

@@ -1,0 +1,99 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  https://perkoon.com/llms.txt, https://perkoon.com/.well-known/agent-card.json, the perkoon 0.5.7 npm tarball
+  (README.md, AGENTS.md, dist/client.js), the @perkoon/mcp 0.3.0 tarball (README.md, src/index.js) and the
+  perkoon-transfer 1.1.0 SKILL.md - all 2026-09-19. The HTML automation guide (/automate) is Cloudflare-challenged
+  and was not read.
+description: >-
+  How Perkoon's machine surface behaves across every entry point. Four transports project one capability set -
+  create a transfer session, join it, check it: JSON-RPC 2.0 at POST /a2a, anonymous REST at /api/v1/sessions
+  (consumed by the CLI, which is the reference client), the stdio MCP wrapper, and a CSRF-protected browser form at
+  /create. Everything is anonymous and account-less; the only credentials are per-session (an optional password and,
+  for A2A hand-off, a sender-key returned to the session creator). No idempotency mechanism exists, but the write
+  surface is small and its cost is bounded: creating a session is cheap and expires, and the only irreversible
+  action is the upload of a small file to cloud delivery, which expires on its own in ~48h. There is no versioning
+  scheme on the REST paths beyond /v1, no request tracing, and rate limiting is the one runtime signal the provider
+  documents thoroughly.
+base_url: https://perkoon.com
+api_style: >-
+  JSON-RPC 2.0 over HTTPS POST at /a2a (A2A 0.3.0, preferredTransport JSONRPC, application/json in and out); JSON REST
+  at /api/v1/sessions (create), /api/v1/sessions/{code}/join, /api/v1/sessions/{code}/status; Phoenix channel over
+  wss://perkoon.com/socket for WebRTC signalling; stdio MCP (tools send_file, receive_file, check_session) wrapping the
+  CLI; browser form POST /create (Phoenix protect_from_forgery: session cookie + _csrf_token required).
+authentication:
+  scheme: none - anonymous, no accounts; per-session password optional; per-session sender-key for A2A hand-off
+  docs: https://perkoon.com/llms.txt
+  detail: authentication/perkoon-com-authentication.yml
+media_type: application/json (REST, A2A); application/x-www-form-urlencoded (browser /create); NDJSON on the CLI's stdout
+versioning:
+  style: path
+  current: /api/v1 (REST); A2A card version 1.5.0, protocolVersion 0.3.0; CLI 0.5.7; MCP server 0.3.0; skill 1.1.0
+  note: No versioning or deprecation policy is published. The CLI is installed as perkoon@latest by both the MCP wrapper and the skill, so clients always run the newest CLI. See lifecycle/perkoon-com-lifecycle.yml.
+pagination:
+  supported: false
+  note: There are no list endpoints; every call addresses one session by its 12-character code.
+field_expansion: null
+request_tracing:
+  supported: false
+  note: An x-request-id response header was observed on the agent-card fetch (Phoenix's default Plug.RequestId), but nothing documents it as a correlation mechanism and no request-side header is documented.
+identifiers:
+  session_code: '12 uppercase alphanumeric characters, ^[A-Z0-9]{12}$ (the MCP check_session tool validates this and upper-cases input); doubles as the browser share URL https://perkoon.com/<CODE>'
+  sender_key: 'opaque key returned to the creator of an A2A session; passed to the CLI as --sender-key to attach as sender'
+idempotency:
+  supported: false
+  coverage: none
+  mechanism: null
+  scope: []
+  detail: >-
+    Neither POST /api/v1/sessions nor the /a2a send-files skill accepts an idempotency key or client request id, and
+    no replay semantics are documented. A retried create yields a second session (and consumes the 10/min create
+    budget); a retried small-file send uploads a second copy under a second code. The skill's guidance is procedural
+    instead: share the share_url the moment session_created appears, never restart a send mid-transfer, and back off
+    ~30s on a fast exit-3.
+  docs: null
+reversibility:
+  grade: none
+  write_surface:
+  - 'create session (POST /api/v1/sessions; A2A send-files; CLI send; MCP send_file)'
+  - 'join session (POST /api/v1/sessions/{code}/join; A2A receive-files; CLI receive; MCP receive_file)'
+  - 'cloud-delivery upload of a small file (side effect of send in auto/relay mode)'
+  reversal_operations: []
+  irreversible:
+  - {action: cloud-delivery upload, note: 'No delete/revoke operation is published for a share link; the link expires on its own (~48h per llms.txt, exact expires_at returned in the relay_complete event). Anyone with the link can download unless --password was set (SKILL.md).'}
+  - {action: create session, note: 'No cancel operation is published; an unjoined P2P session ends when the sender process exits or times out (exit 5). Session lifetime is not stated.'}
+  window: null
+  natural_expiry:
+    cloud_link: '~48h (llms.txt: "the link stays valid ~48h"); machine value in relay_complete.expires_at'
+    p2p_session: 'bounded by the sender process (--timeout, default 300s, skill recommends 1800s)'
+    receiver_opfs: '1h TTL for agent-mode browser receivers (llms.txt)'
+  note: >-
+    Graded none because no reversal operation exists; the consequence is bounded by design (P2P bytes never touch the
+    server, relay links expire) but the rubric grades the presence of a published reversal path and window, and an
+    agent that uploads the wrong file to cloud delivery has no published way to pull it back before expiry.
+dry_run_mode:
+  supported: false
+  note: No test mode, sandbox or dry-run flag. The A2A "describe" skill returns capabilities without creating a session, which is a discovery call, not a rehearsal of a write. --server / PERKOON_URL lets a client point at a self-hosted instance, which is a deployment option rather than a sandbox.
+errors:
+  envelope: 'REST: HTTP status (429 documented, with Retry-After + JSON retry_after); CLI: {"event":"error","message","exit_code"} on stdout + exit codes 0-5; MCP: isError text blocks; A2A: JSON-RPC 2.0 (not observed - endpoint challenged)'
+  ref: errors/perkoon-com-problem-types.yml
+rate_limits:
+  signalling: HTTP 429 + Retry-After (seconds) + JSON retry_after; per IP, 60s sliding window; 10 creates / 30 joins / 20 status checks; all /a2a POSTs share the create budget
+  ref: rate-limits/perkoon-com-rate-limits.yml
+lifecycle:
+  ref: lifecycle/perkoon-com-lifecycle.yml
+source_attribution:
+  note: The provider asks clients to tag traffic by transport - a convention unusual enough to record.
+  values:
+    /create: agent_browser
+    /api/v1/sessions: 'agent_cli (default; MCP wrapper sends agent_mcp)'
+    /a2a: 'agent_a2a (always)'
+    any: 'agent_skill (override for skill-discovery attribution)'
+  carriers: ['CLI --source', 'env PERKOON_SOURCE', 'browser form field session[source]']
+agent_guidance_published:
+  source: https://perkoon.com/llms.txt
+  notes:
+  - llms.txt ranks the entry points for an agent - MCP first (coding agents), CLI second (shell, no MCP), A2A third (HTTP, no shell), browser last - and gives the exact command or config for each.
+  - The agent card's extensions.clientCapabilities lets an A2A client declare {nodeJs, shellAccess} in its DataPart to get a runtime-appropriate response (CLI command vs browser URL).
+  - Browser automation is documented down to data-testid selectors, the window.__perkoon state object and perkoon:* DOM events, plus ready-to-run Playwright scripts (/perkoon_send.mjs, /perkoon_receive.mjs - both Cloudflare-challenged to curl).
+  - robots.txt carries an "AI Agents & Operators Welcome" block; the /api/ disallow was honored by this pass.

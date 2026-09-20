@@ -1,0 +1,109 @@
+generated: '2026-09-19'
+method: searched
+status: published
+source: https://registry.npmjs.org/@perkoon/mcp (0.3.0, published 2026-09-01; tarball src/index.js read, not executed)
+docs: https://www.npmjs.com/package/@perkoon/mcp
+llms_source: https://perkoon.com/llms.txt
+description: >-
+  Perkoon ships an official MCP server as a local stdio package, @perkoon/mcp on npm (author Perkoon, same maintainer
+  as the perkoon CLI; homepage https://perkoon.com; proprietary licence). It is named in the A2A agent card's resources[]
+  (type mcp-server), in llms.txt ("MCP Server (Best for coding agents)") and in the CLI's AGENTS.md. There is NO hosted
+  or remote MCP endpoint: mcp.perkoon.com has no DNS record, /.well-known/mcp.json and /mcp.json are not served, and the
+  official registry (registry.modelcontextprotocol.io) returns 0 servers for "perkoon". The server is a thin wrapper -
+  it registers three tools with zod schemas and, for send/receive, spawns `npx -y perkoon@latest ... --json` and parses
+  the CLI's JSONL events (setting PERKOON_SOURCE=agent_mcp); check_session is a direct GET to
+  https://perkoon.com/api/v1/sessions/<CODE>/status. The tool list and inputSchemas below are transcribed from the
+  published package source (src/index.js, 12,489 bytes), not from a live tools/list, because a stdio server has no
+  endpoint to introspect without executing the package. Requires Node.js >= 18. Not on registry.modelcontextprotocol.io.
+deployment:
+  mode: local-stdio
+  endpoint: null
+  install: npx -y @perkoon/mcp
+  package: https://www.npmjs.com/package/@perkoon/mcp
+  auth: none
+  verified: searched
+  checked: '2026-09-19'
+  evidence:
+  - {url: https://registry.npmjs.org/@perkoon/mcp, status: 200, result: 'latest 0.3.0 published 2026-09-01T18:55:14Z; 7 versions since 2026-03-13; bin perkoon-mcp -> src/index.js; deps @modelcontextprotocol/sdk ^1.12.1, zod ^3.24.4'}
+  - {url: https://perkoon.com/.well-known/agent-card.json, status: 200, result: 'resources[] entry type mcp-server: "Run: npx -y @perkoon/mcp (stdio transport)"'}
+  - {url: https://perkoon.com/llms.txt, status: 200, result: 'Install: npx -y @perkoon/mcp (stdio transport); host config snippets for Claude Code, Claude Desktop, Cursor, VS Code'}
+  - {url: https://perkoon.com/.well-known/mcp.json, status: 404}
+  - {url: https://perkoon.com/mcp.json, status: 403, result: Cloudflare managed challenge}
+  - {host: mcp.perkoon.com, dns: none}
+  - {url: 'https://registry.modelcontextprotocol.io/v0/servers?search=perkoon', status: 200, result: '{"servers":[],"metadata":{"count":0}}'}
+  host_config:
+    claude_code: '.mcp.json -> { "mcpServers": { "perkoon": { "command": "npx", "args": ["-y", "@perkoon/mcp"] } } }'
+    claude_desktop: claude_desktop_config.json, same block
+    cursor_vscode_windsurf: 'Settings -> MCP -> Add Server -> npx -y @perkoon/mcp'
+    server_override: 'env PERKOON_URL (e.g. a self-hosted instance) is passed through to the spawned CLI'
+  probe_commands: ['npx -y @perkoon/mcp --version (prints the version and exits)', 'npx -y @perkoon/mcp --help (prints the tool list + config snippet)']
+server:
+  name: perkoon
+  version: 0.3.0
+  transport: stdio
+  command: npx -y @perkoon/mcp
+  bin: perkoon-mcp
+  hosted: false
+  upstream: https://perkoon.com (the CLI it spawns defaults to this server; PERKOON_URL overrides)
+  sdk: '@modelcontextprotocol/sdk ^1.12.1 (McpServer + StdioServerTransport)'
+  capabilities:
+    tools: {}
+  limits_in_source:
+    max_concurrent_transfers: 5
+    max_timeout_seconds: 3600
+    max_password_length: 512
+    path_policy: 'refuses /etc/, /proc/, /sys/, /dev/ and any path containing /.ssh/, /.gnupg/, /.aws/, /.config/; on non-Windows the resolved path must sit under $HOME or the cwd; symlinks resolved before checking'
+tool_count: 3
+tools:
+- name: send_file
+  category: transfer
+  side_effect: write
+  description: >-
+    Send a file. Small files (within the free cloud allotment) upload to free cloud delivery and return a durable share
+    link immediately — no receiver needed, the link works after this call returns. Larger files fall back to direct
+    P2P: the call blocks until a receiver connects. Returns the session code and share URL.
+  inputSchema:
+    type: object
+    properties:
+      file_path: {type: string, description: Path to the file to send (must be within home directory or working directory)}
+      password: {type: string, maxLength: 512, description: Optional password to protect the transfer}
+      timeout: {type: integer, minimum: 1, maximum: 3600, description: 'Seconds to wait for receiver in P2P mode (default: 300, max: 3600)'}
+      mode: {type: string, enum: [auto, relay, p2p], description: "Delivery mode: 'auto' (default — cloud relay when available, else P2P), 'relay' (force cloud, errors if unavailable), 'p2p' (force direct streaming)"}
+    required: [file_path]
+  implementation: 'spawn npx -y perkoon@latest send <path> --json [--password] [--timeout] [--relay|--p2p]'
+  rest_equivalent: 'POST https://perkoon.com/api/v1/sessions (session create) + WebRTC/relay upload, performed by the CLI'
+  result_shape: 'text block: relay -> "File uploaded to cloud delivery…" with Share URL, Session code, Link valid until; P2P -> "Transfer complete!" with Session code, Share URL, Duration, Speed; timeout (exit 5) -> isError with the session code and the receiver command'
+- name: receive_file
+  category: transfer
+  side_effect: write
+  description: Receive files from a P2P transfer session. Connects to an existing session by code and downloads the files.
+  inputSchema:
+    type: object
+    properties:
+      session_code: {type: string, description: 12-character session code from the sender}
+      output_dir: {type: string, description: 'Directory to save received files (default: ./received)'}
+      password: {type: string, maxLength: 512, description: Password if the session is protected}
+    required: [session_code]
+  implementation: 'spawn npx -y perkoon@latest receive <code> --json [--output <dir>] [--password]'
+  rest_equivalent: 'POST https://perkoon.com/api/v1/sessions/<CODE>/join + WebRTC receive, performed by the CLI'
+- name: check_session
+  category: status
+  side_effect: read
+  description: Check the status of a P2P transfer session. Returns whether the session is active or not found.
+  inputSchema:
+    type: object
+    properties:
+      session_code: {type: string, pattern: '^[A-Za-z0-9]{12}$', description: 12-character session code to check}
+    required: [session_code]
+  implementation: 'GET https://perkoon.com/api/v1/sessions/<CODE>/status (anonymous); non-2xx -> "not found (may have expired or never existed)"'
+  rest_equivalent: GET https://perkoon.com/api/v1/sessions/{code}/status
+  result_shape: '"Session <CODE>: <status>" plus "Expires: <expires_at>" when present'
+tool_crosswalk:
+  note: >-
+    No OpenAPI exists to bind to, so no mcp/perkoon-com-tool-crosswalk.yml is emitted. The binding that is known from
+    source: send_file -> POST /api/v1/sessions (via CLI), receive_file -> POST /api/v1/sessions/{code}/join (via CLI),
+    check_session -> GET /api/v1/sessions/{code}/status. The A2A skills send-files / receive-files / session-status are
+    the same three capabilities over JSON-RPC at /a2a.
+related_packages:
+- {name: perkoon, registry: npm, version: 0.5.7, role: the CLI this server spawns}
+- {name: perkoon-transfer, registry: npm, version: 1.1.0, role: Agent Skill (skillpm) that drives the same CLI}

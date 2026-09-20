@@ -1,0 +1,64 @@
+generated: '2026-09-19'
+method: searched
+probe: true
+source: https://perkoon.com/llms.txt
+signals: {}
+note: >-
+  No regulatory-posture signal is published on any surface this pass could read. Every conventional legal and policy
+  path (/accessibility, /accessibility/vpat, /legal/subprocessors, /legal/dpa, /privacy/requests, /transparency,
+  /security/sbom, /docs/data-residency, /ai/transparency, /legal/report-content, /privacy, /terms) answered a Cloudflare
+  managed challenge (HTTP 403, cf-mitigated: challenge) rather than a page, so their existence is neither confirmed nor
+  denied; llms.txt, the agent card and the npm packages - the machine-readable surfaces that ARE served - carry no
+  privacy, accessibility, subprocessor, residency, SBOM or transparency statement. The only legal facts published in
+  machine-readable form are in the npm LICENSE: the operator is MB "Perkunu simtas" (Perkoon), registered in Lithuania,
+  EU, contact info@perkoon.com. Data-handling facts that are published but are product behaviour rather than a
+  regulatory signal: P2P bytes "never touch our servers" (README), cloud-delivery links expire in ~48h (llms.txt),
+  agent-mode browser receivers hold files in OPFS with a 1h TTL (llms.txt), and the /create form requires
+  session[tos_accepted]=true (a terms gate whose text was not readable). Empty signals is the measurement, not a gap
+  in the pass.
+operator:
+  legal_entity: MB "Perkunu simtas" (Perkoon)
+  jurisdiction: Lithuania, EU
+  contact: info@perkoon.com
+  source: LICENSE in the perkoon 0.5.7 npm tarball
+probed_absent:
+- signal: accessibility_conformance
+  urls: [{url: https://perkoon.com/accessibility, status: 403}, {url: https://perkoon.com/accessibility/vpat, status: 403}]
+  note: Cloudflare managed challenge; unreadable.
+- signal: subprocessors
+  urls: [{url: https://perkoon.com/legal/subprocessors, status: 403}, {url: https://perkoon.com/legal/dpa, status: 403}]
+  note: Cloudflare managed challenge; unreadable. The CLI/MCP packages name no third-party processor; the site runs on Cloudflare (edge) and Caddy/Phoenix (origin) per response headers.
+- signal: data_subject_request
+  urls: [{url: https://perkoon.com/privacy/requests, status: 403}, {url: https://perkoon.com/privacy, status: 403}]
+  note: Cloudflare managed challenge; unreadable. No rights statement in any machine-readable surface.
+- signal: sbom
+  urls: [{url: https://perkoon.com/security/sbom, status: 403}]
+  note: Never derived - search only. The npm packages ship bundled code under a licence that forbids reverse engineering; no SBOM accompanies them.
+- signal: support_lifetime
+  urls: [{url: https://perkoon.com/changelog, status: 403}]
+  note: No versioning or support-period statement anywhere machine-readable; all integrations run perkoon@latest.
+- signal: ai_transparency
+  urls: [{url: https://perkoon.com/ai/transparency, status: 403}]
+  note: The product is built FOR agents; it does not itself publish an AI-system disclosure, and nothing suggests it operates a model.
+- signal: training_data_summary
+  urls: []
+  note: Not applicable to what is published; no model is shipped.
+- signal: global_privacy_control
+  urls: [{url: https://perkoon.com/privacy, status: 403}]
+  note: No published statement readable; honored is not set (never inferred from a header probe).
+- signal: data_residency
+  urls: [{url: https://perkoon.com/docs/data-residency, status: 403}]
+  note: No region stated. P2P bytes do not transit the server (README); the cloud-delivery region is not stated.
+- signal: incident_notification
+  urls: [{url: https://perkoon.com/legal/dpa, status: 403}]
+- signal: age_assurance
+  urls: []
+  note: No age signals in any machine-readable surface; the /create form's session[tos_accepted]=true gate is a terms acceptance, not age assurance.
+- signal: notice_and_action
+  urls: [{url: https://perkoon.com/legal/report-content, status: 403}]
+  note: Relevant in principle - the service hosts user-uploaded files for ~48h - but no reporting channel is published in a readable surface.
+- signal: transparency_report
+  urls: [{url: https://perkoon.com/transparency, status: 403}]
+- signal: exit_assistance
+  urls: []
+  note: Not applicable - no accounts and no retained customer data beyond the ~48h cloud link.

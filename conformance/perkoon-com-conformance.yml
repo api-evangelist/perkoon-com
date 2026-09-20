@@ -1,0 +1,108 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  https://perkoon.com/.well-known/agent-card.json, https://perkoon.com/.well-known/agent.json, https://perkoon.com/llms.txt,
+  https://perkoon.com/robots.txt, the perkoon 0.5.7 / @perkoon/mcp 0.3.0 / perkoon-transfer 1.1.0 npm tarballs, the
+  /.well-known/ probe in well-known/perkoon-com-well-known.yml and the challenge-403 probes of /a2a, /automate and
+  /pricing - all fetched 2026-09-19.
+description: >-
+  What Perkoon's machine surface actually conforms to. The company is built around agents as first-class users and
+  publishes an A2A card that passes every structural check, an llms.txt in the llmstxt.org shape, an Agent Skills-format
+  SKILL.md, and an MCP server on the official TypeScript SDK - but no REST contract (OpenAPI), no OAuth surface, no
+  event surface and no security.txt. The REST paths the CLI calls are described only by the CLI's own bundle. Cross-
+  cutting API standards that do not apply are recorded as not applicable rather than omitted. No domain standard for
+  the company's market (file transfer) is declared, and none is asserted here.
+standards:
+- id: a2a-agent-card
+  conforms: true
+  grade: conformant
+  evidence: >-
+    AgentCard served at the canonical /.well-known/agent-card.json AND the legacy /.well-known/agent.json on
+    perkoon.com (200, application/json, byte-identical, 4,756 bytes; www 301s to apex). capabilities is an object,
+    protocolVersion "0.3.0" present, skills is an array of 4, preferredTransport JSONRPC, defaultInputModes /
+    defaultOutputModes present, provider and documentationUrl present. Non-standard additive fields (extensions,
+    rateLimits, resources). See a2a/perkoon-com-a2a.yml.
+- id: a2a-jsonrpc-endpoint
+  conforms: null
+  evidence: >-
+    The card names https://perkoon.com/a2a (JSONRPC) and llms.txt documents "POST https://perkoon.com/a2a with JSON-RPC
+    2.0", but the endpoint answered a Cloudflare managed challenge (HTTP 403, cf-mitigated: challenge) to a JSON-RPC
+    POST with and without a browser User-Agent on 2026-09-19. Not verified; not marked non-conformant, because the
+    wall is the edge policy toward this client, not the protocol.
+- id: mcp
+  conforms: true
+  protocol_version: null
+  evidence: >-
+    @perkoon/mcp 0.3.0 builds on @modelcontextprotocol/sdk ^1.12.1 (McpServer + StdioServerTransport) and registers
+    three tools with zod input schemas via server.tool(); capabilities tools only. Local stdio transport - no hosted
+    endpoint, so the negotiated protocolVersion depends on the host; not observed. See mcp/perkoon-com-mcp.yml.
+- id: mcp-streamable-http
+  conforms: false
+  applicable: false
+  evidence: No remote MCP endpoint exists (mcp.perkoon.com has no DNS; /.well-known/mcp.json 404; registry.modelcontextprotocol.io 0 servers). Stdio only.
+- id: agent-skills
+  conforms: true
+  evidence: >-
+    perkoon-transfer 1.1.0 ships skills/perkoon-transfer/SKILL.md with Agent Skills frontmatter (name, description,
+    allowed-tools: Bash Read) and a body grounded in the CLI's real commands, JSON events, exit codes and rate limits;
+    the same file is advertised at https://perkoon.com/skills/perkoon/SKILL.md (Cloudflare-challenged). Saved verbatim
+    in skills/.
+- id: llms-txt
+  conforms: true
+  evidence: >-
+    /llms.txt (200, text/plain, 8,885 bytes decoded) in llmstxt.org format - H1, blockquote summary, H2 sections
+    ranking the MCP / CLI / A2A / browser entry points, a Rate Limits section, a Resources link list and Pricing.
+    Saved verbatim to llms/perkoon-com-llms.txt. No llms-full.txt is published.
+- id: robots-txt-ai-crawler-policy
+  conforms: true
+  evidence: >-
+    /robots.txt: "User-agent: * / Allow: /", a Sitemap line, a comment block "AI Agents & Operators Welcome" pointing
+    at the agent card, llms.txt and /automate, and Disallow on /gx7k9m2p5/, /api/ and /analytics/. The /api/
+    disallow was honored by this pass.
+- id: rfc6585-429-retry-after
+  conforms: true
+  evidence: >-
+    Rate-limit exhaustion is documented as HTTP 429 with a Retry-After header in seconds and the same value as
+    retry_after in the JSON body (agent card rateLimits.onExceeded; llms.txt). Not observed live. See
+    rate-limits/perkoon-com-rate-limits.yml.
+- id: openapi
+  conforms: false
+  evidence: >-
+    No OpenAPI or Swagger document is published: /openapi.json, /openapi.yaml, /swagger.json, /api-docs and /docs
+    all answer the Cloudflare challenge (403 HTML) and api./docs.perkoon.com do not resolve; /.well-known/api-catalog
+    404. The REST paths (/api/v1/sessions, /join, /status) are known only from the CLI bundle and llms.txt. Not
+    derived - see Never fabricate.
+- id: oauth2
+  conforms: false
+  applicable: false
+  evidence: Anonymous, account-less surface; /.well-known/oauth-authorization-server and /.well-known/oauth-protected-resource return 404; the A2A card declares no securitySchemes.
+- id: oidc
+  conforms: false
+  applicable: false
+  evidence: /.well-known/openid-configuration returns 404; no login exists ("No accounts").
+- id: rfc9116-security-txt
+  conforms: false
+  evidence: /.well-known/security.txt returns 404; /security.txt returns a 200 HTML "Page Not Found" soft-404. The npm LICENSE gives info@perkoon.com as the only contact.
+- id: rfc9457
+  conforms: false
+  applicable: false
+  evidence: 'No problem+json is documented; REST errors are HTTP status codes (429 documented), CLI errors are NDJSON {event: error, message, exit_code} plus exit codes 0-5. See errors/perkoon-com-problem-types.yml.'
+- id: idempotency
+  conforms: false
+  evidence: No idempotency key or replay semantics on session create / send. See conventions/perkoon-com-conventions.yml.
+- id: pagination
+  conforms: false
+  applicable: false
+  evidence: No list endpoints; every call addresses one session code.
+- id: webrtc
+  conforms: true
+  evidence: >-
+    P2P transfers use WebRTC data channels (CLI depends on node-datachannel; llms.txt and README name WebRTC; SKILL.md
+    "WebRTC/DTLS-encrypted"); perkoon.com performs signalling only over a Phoenix channel (wss://perkoon.com/socket).
+    Recorded from the provider's packages, not observed.
+domain_standard:
+  applicable: false
+  note: >-
+    Perkoon is a consumer/agent file-transfer service; no sector interchange standard (AS2/AS4, SFTP profiles, MFT
+    standards, SCIM, OData, FHIR, etc.) applies to its published surface, and none is declared in the card, llms.txt or
+    the packages. Reward-only check - nothing is asserted.

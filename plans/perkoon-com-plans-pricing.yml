@@ -1,0 +1,43 @@
+generated: '2026-09-19'
+method: searched
+source: https://perkoon.com/llms.txt
+docs:
+- https://perkoon.com/llms.txt
+- https://perkoon.com/pricing
+- https://perkoon.com/.well-known/agent-card.json
+- https://www.npmjs.com/package/perkoon
+plan_count: 0
+currency: null
+model: >-
+  Free, account-less core (P2P transfers unlimited, and a "free cloud allotment" for small files with ~48h link
+  retention); paid cloud-storage plans for larger allotments and longer retention, advertised at /pricing.
+summary: >-
+  Perkoon publishes a pricing page (https://perkoon.com/pricing, named in llms.txt as "Cloud storage: Paid plans …
+  for bigger allotments and longer retention") but it answered a Cloudflare managed challenge (HTTP 403,
+  cf-mitigated: challenge) on 2026-09-19 with and without a browser User-Agent, so the tier names, prices, quotas
+  and retention periods could not be read and no tier is recorded (plan_count 0 - the honest state, not an
+  assertion that no plans exist). What IS published in machine-readable form, verbatim from llms.txt and the agent
+  card: P2P is "Free forever, unlimited size, one sender to one receiver, sender stays online"; small files within
+  the free cloud allotment "upload once and get a durable ~48h link — fully automated via CLI/MCP"; "No accounts";
+  the size threshold of the free allotment is not stated anywhere reachable. The only limits attached to the free
+  tier are the per-IP rate limits in rate-limits/perkoon-com-rate-limits.yml.
+plans: []
+free_tier: true
+free_tier_published:
+  p2p:
+    price: 0
+    size_limit: none
+    retention: sender must stay online
+    note: 'verbatim: P2P: Free forever, unlimited size, one sender to one receiver, sender stays online'
+  cloud_delivery:
+    price: 0
+    size_limit: within the free cloud allotment (threshold not published)
+    retention: ~48h durable link
+    note: 'verbatim: Free cloud delivery: files within the free allotment upload once and get a durable ~48h link — fully automated via CLI/MCP (fire-and-forget)'
+  accounts_required: false
+paid_plans_published: true
+paid_plans_readable: false
+paid_plans_note: 'llms.txt verbatim: "Cloud storage: Paid plans from https://perkoon.com/pricing for bigger allotments and longer retention" - tiers unreadable behind the challenge'
+enterprise_contact: null
+probe:
+- {url: https://perkoon.com/pricing, status: 403, note: Cloudflare managed challenge; body is the "Just a moment..." interstitial, not a pricing page}

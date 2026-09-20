@@ -1,18 +1,155 @@
 aid: perkoon-com
 name: Perkoon
-description: 'Perkoon is a company surfaced via the API Evangelist harvest backlog (source: a2a-registry)
-  and added to the network as a stub for full-pipeline profiling.'
+description: >-
+  Perkoon is an account-less file-transfer service built for AI agents as much as for people, operated by MB "Perkunu
+  simtas" in Lithuania. Small files upload once to free cloud delivery and return a durable ~48-hour share link
+  (fire-and-forget); larger files stream directly between machines over WebRTC with no size limit, with perkoon.com
+  doing signalling only. The same capability - create a transfer session, join it, check it - is projected over four
+  entry points the provider documents for agents: an A2A agent card at /.well-known/agent-card.json (conformant to
+  A2A 1.0.0, protocol 0.3.0, four skills, JSON-RPC at /a2a), an anonymous REST surface at /api/v1/sessions consumed by
+  the first-party perkoon CLI (npm, also an importable JS library), a stdio MCP server (@perkoon/mcp: send_file,
+  receive_file, check_session) and a Playwright-ready browser flow. It publishes llms.txt, a skillpm Agent Skill
+  (perkoon-transfer) and per-IP rate limits inside the card itself. No OpenAPI, OAuth or event surface is published,
+  and every HTML page - including the /automate guide and /pricing - sits behind a Cloudflare managed challenge for
+  non-browser clients, while the card, llms.txt and robots.txt are served openly.
 url: https://raw.githubusercontent.com/api-evangelist/perkoon-com/refs/heads/main/apis.yml
 x-type: company
 x-source: harvest:a2a-registry
-x-tier: stub
-x-tier-reason: harvest
+x-tier: profiled
+x-tier-reason: >-
+  enrichment pass 2026-09-19: full contract discovery run; conformant A2A agent card at both canonical and legacy
+  paths, llms.txt, three first-party npm packages (CLI/library, stdio MCP server, Agent Skill) read from the registry
+  and tarballs, rate limits published in the card; no OpenAPI, OAuth or hosted MCP exists; HTML docs and pricing are
+  Cloudflare-challenged and were not read
 specificationVersion: '0.20'
 created: '2026-09-19'
 modified: '2026-09-19'
 tags:
-- Company
-apis: []
+- File Transfer
+- P2P
+- WebRTC
+- AI Agents
+- A2A
+- MCP
+- CLI
+- Agent Skills
+- Cloud Storage
+- Developer Tools
+- Lithuania
+apis:
+- aid: perkoon-com:perkoon-a2a-agent
+  name: Perkoon Agent Data Layer (A2A)
+  description: >-
+    Perkoon's agent-to-agent surface: an A2A agent card served at /.well-known/agent-card.json and the legacy
+    /.well-known/agent.json (byte-identical, 200 application/json) pointing at a JSON-RPC 2.0 endpoint at
+    https://perkoon.com/a2a. Four skills - describe (capabilities without creating a session), send-files (creates a
+    session and returns a browser sender_url plus the CLI command with a sender-key), receive-files (join by code) and
+    session-status - application/json in and out, no streaming, push notifications or task history. The card is
+    conformant against A2A 1.0.0 (protocolVersion 0.3.0, preferredTransport JSONRPC) and carries non-standard but useful
+    rateLimits and resources fields. Anonymous. Every POST to /a2a counts against the 10/min per-IP create budget. The
+    endpoint answered a Cloudflare managed challenge to non-browser probes on 2026-09-19.
+  humanURL: https://perkoon.com/automate
+  baseURL: https://perkoon.com/a2a
+  tags:
+  - A2A
+  - AI Agents
+  - JSON-RPC
+  - File Transfer
+  properties:
+  - type: Documentation
+    url: https://perkoon.com/automate
+  - type: AgentCard
+    url: a2a/perkoon-com-a2a.yml
+  - type: Authentication
+    url: authentication/perkoon-com-authentication.yml
+  - type: Conventions
+    url: conventions/perkoon-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/perkoon-com-problem-types.yml
+  - type: RateLimits
+    url: rate-limits/perkoon-com-rate-limits.yml
+  - type: Conformance
+    url: conformance/perkoon-com-conformance.yml
+  - type: Lifecycle
+    url: lifecycle/perkoon-com-lifecycle.yml
+  overlays: []
+- aid: perkoon-com:perkoon-sessions-api
+  name: Perkoon Sessions API
+  description: >-
+    The anonymous REST surface under https://perkoon.com/api/v1 that every Perkoon client uses: POST /sessions (create,
+    10/min per IP), POST /sessions/{code}/join (30/min) and GET /sessions/{code}/status (20/min), plus a Phoenix
+    channel at wss://perkoon.com/socket for WebRTC signalling. Documented by the provider through its reference
+    client rather than a contract: the perkoon CLI on npm (28 releases since 2026-02, --json NDJSON events, exit codes
+    0-5, also importable as a JS library), llms.txt and the perkoon-transfer Agent Skill. No OpenAPI is published and
+    robots.txt disallows /api/, so the paths are transcribed from the CLI bundle and were not probed. Rate-limit
+    exhaustion returns 429 with Retry-After; no accounts, keys or OAuth exist.
+  humanURL: https://perkoon.com/automate
+  baseURL: https://perkoon.com/api/v1
+  tags:
+  - File Transfer
+  - P2P
+  - WebRTC
+  - Sessions
+  - CLI
+  properties:
+  - type: Documentation
+    url: https://perkoon.com/automate
+  - type: CLI
+    url: cli/perkoon-com-cli.yml
+  - type: Packages
+    url: packages/perkoon-com-packages.yml
+  - type: SDKs
+    url: packages/perkoon-com-packages.yml
+  - type: AgentSkill
+    url: skills/_index.yml
+  - type: Authentication
+    url: authentication/perkoon-com-authentication.yml
+  - type: Conventions
+    url: conventions/perkoon-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/perkoon-com-problem-types.yml
+  - type: RateLimits
+    url: rate-limits/perkoon-com-rate-limits.yml
+  - type: Conformance
+    url: conformance/perkoon-com-conformance.yml
+  - type: Lifecycle
+    url: lifecycle/perkoon-com-lifecycle.yml
+  overlays: []
+- aid: perkoon-com:perkoon-mcp-server
+  name: Perkoon MCP Server
+  description: >-
+    Official local stdio MCP server, @perkoon/mcp on npm (0.3.0, 2026-09-01), installed with npx -y @perkoon/mcp and
+    named in the A2A card's resources[] and in llms.txt as the recommended path for coding agents (Claude Code, Claude
+    Desktop, Cursor, VS Code, Windsurf). Three tools with zod input schemas - send_file (file_path, password, timeout,
+    mode auto|relay|p2p), receive_file (session_code, output_dir, password) and check_session (session_code) - the
+    first two spawning the perkoon CLI with --json and the third calling GET /api/v1/sessions/{code}/status on
+    https://perkoon.com. Path policy refuses system and credential directories; max 5 concurrent transfers. There is no
+    hosted MCP endpoint (mcp.perkoon.com does not resolve; not on registry.modelcontextprotocol.io).
+  humanURL: https://www.npmjs.com/package/@perkoon/mcp
+  baseURL: https://perkoon.com/api/v1
+  tags:
+  - MCP
+  - AI Agents
+  - File Transfer
+  - stdio
+  properties:
+  - type: Documentation
+    url: https://www.npmjs.com/package/@perkoon/mcp
+  - type: MCPServer
+    url: mcp/perkoon-com-mcp.yml
+  - type: Packages
+    url: packages/perkoon-com-packages.yml
+  - type: Authentication
+    url: authentication/perkoon-com-authentication.yml
+  - type: Conventions
+    url: conventions/perkoon-com-conventions.yml
+  - type: ErrorCatalog
+    url: errors/perkoon-com-problem-types.yml
+  - type: RateLimits
+    url: rate-limits/perkoon-com-rate-limits.yml
+  - type: Conformance
+    url: conformance/perkoon-com-conformance.yml
+  overlays: []
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
@@ -21,3 +158,52 @@ maintainers:
 common:
 - type: Website
   url: https://perkoon.com/
+- type: Documentation
+  url: https://perkoon.com/automate
+- type: GettingStarted
+  url: https://perkoon.com/llms.txt
+- type: Pricing
+  url: https://perkoon.com/pricing
+- type: Sitemap
+  url: https://perkoon.com/sitemap.xml
+- type: GitHubOrganization
+  url: https://github.com/Perkoon
+- type: LLMsTxt
+  url: llms/perkoon-com-llms.txt
+- type: WellKnown
+  url: well-known/perkoon-com-well-known.yml
+- type: AgentCard
+  url: a2a/perkoon-com-a2a.yml
+- type: MCPServer
+  url: mcp/perkoon-com-mcp.yml
+- type: Packages
+  url: packages/perkoon-com-packages.yml
+- type: SDKs
+  url: packages/perkoon-com-packages.yml
+- type: CLI
+  url: cli/perkoon-com-cli.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: RateLimits
+  url: rate-limits/perkoon-com-rate-limits.yml
+- type: Plans
+  url: plans/perkoon-com-plans-pricing.yml
+- type: Authentication
+  url: authentication/perkoon-com-authentication.yml
+- type: Conventions
+  url: conventions/perkoon-com-conventions.yml
+- type: ErrorCatalog
+  url: errors/perkoon-com-problem-types.yml
+- type: Conformance
+  url: conformance/perkoon-com-conformance.yml
+- type: Lifecycle
+  url: lifecycle/perkoon-com-lifecycle.yml
+- type: RegulatoryPosture
+  url: regulatory/perkoon-com-regulatory-posture.yml
+- type: DomainSecurity
+  url: security/perkoon-com-domain-security.yml
+x-enrichment:
+  date: '2026-09-19'
+  status: enriched
+  artifacts_added: 19
+  pass: local-v3

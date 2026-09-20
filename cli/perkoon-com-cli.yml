@@ -1,0 +1,94 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  https://registry.npmjs.org/perkoon (0.5.7, published 2026-09-04; README.md, AGENTS.md and dist/bin/perkoon.js in the
+  tarball), https://perkoon.com/llms.txt (CLI section), the perkoon-transfer SKILL.md and the A2A card's send-files /
+  receive-files skill descriptions - all 2026-09-19.
+description: >-
+  The perkoon CLI is the primary machine surface: the MCP server spawns it, the published Agent Skill drives it, and the
+  A2A card's send-files skill hands agents its exact command line. Two commands - send and receive - with a --json mode
+  that emits ordered NDJSON events and deterministic exit codes. Small files upload once to Perkoon's cloud ("free cloud
+  delivery", durable share link ~48h, process exits 0); larger files stream direct P2P over WebRTC data channels
+  (perkoon.com does signalling only) and the process must stay alive until the receiver finishes. No account, no login
+  command, no API key. The package is also catalogued in packages/perkoon-com-packages.yml; this artifact is its
+  command surface.
+docs: https://www.npmjs.com/package/perkoon
+repo: null
+license: Proprietary (Perkoon Proprietary License; use and depend on, no modification or redistribution)
+requirements: Node.js >= 18
+install:
+  npm_global: npm install -g perkoon
+  npx: npx -y perkoon@latest <command>
+  mcp_wrapper: npx -y @perkoon/mcp (spawns this CLI with --json)
+  skill: npx skillpm install perkoon-transfer (Agent Skill that drives this CLI)
+commands:
+  transfer:
+  - {name: send <file>, description: 'Create a session and send a file. Auto mode: cloud relay when granted and the file fits (fire-and-forget, prints share link, exits 0), else direct P2P (waits for a receiver).'}
+  - {name: receive <code>, description: Join an existing session by its 12-character code and download the files (default ./received/).}
+  meta:
+  - {name: --help, description: Usage.}
+  - {name: --version, description: Print the version.}
+flags:
+  send:
+  - {flag: --relay, description: Force cloud delivery (fails if unavailable).}
+  - {flag: '--p2p, --wait', description: Force direct P2P streaming (process stays alive).}
+  - {flag: --password <pw>, description: Protect the session with a password.}
+  - {flag: --session <code>, description: Join an existing session as the sender (A2A agents - the session was created via POST /a2a send-files).}
+  - {flag: --sender-key <key>, description: Auth key for --session (returned to the session creator).}
+  - {flag: --timeout <sec>, description: 'Wait time for a peer in P2P mode (default 300; the skill recommends 1800).'}
+  receive:
+  - {flag: --output <dir>, description: 'Where to save files (default ./received).'}
+  - {flag: --output -, description: Write the received file to stdout (pipe into another process).}
+  - {flag: --overwrite, description: Replace existing files.}
+  - {flag: --password <pw>, description: Password for a protected session.}
+  common:
+  - {flag: --json, description: Machine-readable NDJSON events on stdout.}
+  - {flag: --quiet, description: No progress output.}
+  - {flag: --source <value>, description: 'Analytics attribution: agent_cli (default), agent_mcp, agent_skill.'}
+  - {flag: --server <url>, description: 'Override the server URL (default https://perkoon.com); also PERKOON_URL. For self-hosted Perkoon / local dev.'}
+environment:
+- {var: PERKOON_URL, effect: Override the server (same as --server).}
+- {var: PERKOON_SOURCE, effect: Override analytics attribution (same as --source); the MCP wrapper sets agent_mcp.}
+json_events:
+  send: [file_ready, session_created, mode, relay_complete, waiting_for_receiver, receiver_connected, waiting_for_acceptance, transfer_accepted, webrtc_connected, progress, transfer_complete]
+  receive: [session_joined, sender_found, webrtc_connected, receiving_file, progress, transfer_complete]
+  error: {event: error, fields: [message, exit_code]}
+  key_fields:
+    session_created: [session_code, share_url]
+    relay_complete: [session_code, share_url, expires_at, duration_ms]
+    transfer_complete: [session_code, duration_ms, speed, files (receive)]
+    progress: [percent, speed, eta, bytes_transferred]
+exit_codes:
+- {code: 0, meaning: Success}
+- {code: 1, meaning: Usage error (bad arguments)}
+- {code: 2, meaning: File error (not found, not a file)}
+- {code: 3, meaning: 'Network/session error - the SKILL.md notes a rate-limit 429 currently surfaces as exit 3 before session_created'}
+- {code: 4, meaning: Auth error (wrong password, access denied)}
+- {code: 5, meaning: Timeout (no peer connected - P2P mode only)}
+server_endpoints_used:
+  note: Transcribed from the bundled dist/client.js; robots.txt disallows /api/ so none was probed live.
+  endpoints:
+  - POST https://perkoon.com/api/v1/sessions (create)
+  - POST https://perkoon.com/api/v1/sessions/{code}/join (join)
+  - GET https://perkoon.com/api/v1/sessions/{code}/status (status; used by the MCP check_session tool)
+  - wss://perkoon.com/socket (Phoenix channel for signalling)
+key_flows:
+  fire_and_forget_send:
+    command: npx -y perkoon@latest send /abs/path/file.pdf --json --quiet
+    description: Small file -> relay_complete event with a durable share_url and expires_at; process exits 0; no receiver needed.
+  p2p_send:
+    command: npx -y perkoon@latest send /abs/path/big.tar --p2p --json --timeout 1800
+    description: Prints session_created immediately (share the share_url); blocks through waiting_for_receiver -> transfer_complete; exit 5 if nobody joins in time.
+  receive_to_dir:
+    command: npx -y perkoon@latest receive K7MX4QPR9W2N --json --overwrite --output ./received/
+    description: Joins, accepts, streams to disk; transfer_complete carries the saved file list.
+  receive_to_stdout:
+    command: perkoon receive CODE --output - > /path/to/destination
+    description: Stream the received file into another process without a disk write.
+  a2a_handoff:
+    command: npx -y perkoon@latest send <file> --session <code> --sender-key <key> --json
+    description: Attach as sender to a session that an agent created over JSON-RPC at /a2a (send-files skill).
+programmatic_api:
+  import: "import { TransferManager } from 'perkoon'"
+  example: "const tm = new TransferManager(); await tm.send('/path/to/file.pdf');"
+  source: AGENTS.md in the npm tarball

@@ -1,0 +1,52 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  registry.npmjs.org metadata for perkoon, @perkoon/mcp and perkoon-transfer (version history + publish timestamps),
+  https://perkoon.com/.well-known/agent-card.json (version 1.5.0, protocolVersion 0.3.0), https://perkoon.com/llms.txt,
+  and live probes of /status, /changelog and /roadmap on 2026-09-19.
+summary: >-
+  Perkoon publishes no versioning policy, deprecation policy, changelog, roadmap, SLA or status page for its machine
+  surface. What it does publish is a dense, dated release history on npm: the CLI has shipped 28 versions in the ~7
+  months since 2026-02-26 (latest 0.5.7 on 2026-09-04), the MCP server 7 versions since 2026-03-13 (0.3.0 on
+  2026-09-01) and the skill 4 versions since 2026-02-28 (1.1.0 on 2026-09-01) - all three touched within the three
+  weeks before this pass, which is the freshest currency signal in this profile. The REST path is versioned at /v1;
+  the A2A card is at version 1.5.0 on protocol 0.3.0. Every published integration path installs the CLI as
+  perkoon@latest, so there is effectively no pinned client version and no compatibility promise. /status, /changelog
+  and /roadmap answered the Cloudflare challenge (403), so their existence could not be confirmed or denied; none is
+  linked from llms.txt, the card or the packages, which is the stronger signal that they do not exist.
+versioning:
+  policy: null
+  scheme: path (/api/v1) for REST; semver on the npm packages; A2A card version string
+  current:
+    rest_path: /api/v1
+    a2a_card: 1.5.0
+    a2a_protocol: 0.3.0
+    cli: 0.5.7
+    mcp_server: 0.3.0
+    agent_skill: 1.1.0
+  pinning: 'None of the provider''s own integration paths pin a CLI version - the MCP wrapper spawns perkoon@latest and llms.txt / the card / the skill all say npx -y perkoon@latest.'
+deprecation:
+  policy: null
+  headers: none documented (no Deprecation or Sunset header)
+  deprecated_operations: []
+  note: 'perkoon-transfer 1.0.x -> 1.1.0 and @perkoon/mcp 0.2.x -> 0.3.0 both shipped on 2026-09-01, the same day; the CLI README describes --relay/--p2p flags that the older skill text did not know, so the 09-01 releases look like a coordinated update for the "free cloud delivery" mode. No package is marked deprecated on npm.'
+status_page:
+  url: null
+  probed: [{url: https://perkoon.com/status, status: 403, note: Cloudflare managed challenge - unconfirmed either way; not linked anywhere}]
+changelog:
+  url: null
+  probed: [{url: https://perkoon.com/changelog, status: 403, note: Cloudflare managed challenge - unconfirmed either way; not linked anywhere}]
+  release_history_source: npm (registry.npmjs.org time[] per version) - see changelog-like data below
+roadmap:
+  url: null
+  probed: [{url: https://perkoon.com/roadmap, status: 403, note: Cloudflare managed challenge - unconfirmed either way; not linked anywhere}]
+sla: null
+release_history:
+  perkoon_cli: {first: '2026-02-26', latest: '2026-09-04', latest_version: 0.5.7, versions: 28}
+  perkoon_mcp: {first: '2026-03-13', latest: '2026-09-01', latest_version: 0.3.0, versions: 7}
+  perkoon_transfer_skill: {first: '2026-02-28', latest: '2026-09-01', latest_version: 1.1.0, versions: 4}
+freshness:
+  agent_card_version: 1.5.0
+  npm_latest_release: '2026-09-04'
+  github_org_created: '2025-10-02'
+  data_retention_signals: {cloud_link: '~48h (llms.txt)', receiver_opfs_agent_mode: '1h TTL (llms.txt)'}
