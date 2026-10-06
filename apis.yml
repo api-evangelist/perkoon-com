@@ -23,7 +23,7 @@ x-tier-reason: >-
   Cloudflare-challenged and were not read
 specificationVersion: '0.20'
 created: '2026-09-19'
-modified: '2026-09-19'
+modified: '2026-10-06'
 tags:
 - File Transfer
 - P2P
@@ -156,6 +156,8 @@ maintainers:
 - FN: APIs.json
   email: info@apis.io
 common:
+- url: https://perkoon.com/learn/feed.xml
+  type: BlogRSS
 - type: Website
   url: https://perkoon.com/
 - type: Documentation
