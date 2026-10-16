@@ -1,0 +1,14 @@
+{
+  "repo": "perkoon-com",
+  "feeds": [
+    {
+      "source": "https://perkoon.com/learn/feed.xml",
+      "feed_url": "https://perkoon.com/learn/feed.xml",
+      "title": "",
+      "saved": 0,
+      "method": "feed"
+    }
+  ],
+  "post_count": 0,
+  "fetched": "2026-10-10T13:15:00Z"
+}
