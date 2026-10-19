@@ -67,9 +67,55 @@ edges:
     detected: '2026-10-15'
   detected_by: sweep-ai-agents.py
   first_seen: '2026-10-15'
+- partner_name: npm registry
+  partner: npm
+  partner_match: register
+  type: register
+  direction: provider-built
+  category: official SDK (JavaScript/TypeScript)
+  evidence: https://www.npmjs.com/package/perkoon
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: npm registry (public registry JSON)
+    spec_file: null
+    language: JavaScript/TypeScript
+    packages:
+    - name: perkoon
+      version: 0.5.7
+      released: '2026-09-04'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/perkoon
+      repo_leg: domain:perkoon.com
+      publisher_leg: email:perkoon.com
+      matched_by: domain
+    - name: perkoon-transfer
+      version: 1.1.0
+      released: '2026-09-01'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/perkoon-transfer
+      repo_leg: domain:perkoon.com
+      publisher_leg: email:perkoon.com
+      matched_by: domain
+    current: true
+    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
+      24 months'
+    detected_by: sweep-official-sdks.py
+    detected: '2026-10-18'
+  detected_by: sweep-official-sdks.py
+  first_seen: '2026-10-18'
 generated: '2026-10-15'
 method: searched
 source:
 - https://a2aregistry.org/api/agents
 checked:
 - https://a2aregistry.org/api/agents
+- https://api.nuget.org/v3
+- https://crates.io/api/v1
+- https://proxy.golang.org
+- https://pypi.org/pypi
+- https://registry.npmjs.org
+- https://repo1.maven.org/maven2
+- https://rubygems.org/api/v1
