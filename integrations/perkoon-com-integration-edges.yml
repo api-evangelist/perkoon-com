@@ -38,36 +38,6 @@ edges:
     detected: '2026-10-18'
   detected_by: sweep-official-sdks.py
   first_seen: '2026-10-18'
-- partner_name: npm registry
-  partner: npm
-  partner_match: register
-  type: register
-  direction: provider-built
-  category: official CLI (npm registry)
-  evidence: https://www.npmjs.com/package/perkoon
-  channel: package-registry
-  relationship: distribution-channel
-  contract_reference:
-    register: npm registry (public package index)
-    spec_file: null
-    packages:
-    - name: perkoon
-      version: 0.5.7
-      released: '2026-09-04'
-      released_field: modified
-      lapsed: false
-      page: https://www.npmjs.com/package/perkoon
-      cli: bin perkoon
-      repo_leg: domain:perkoon.com
-      publisher_leg: email:perkoon.com
-      matched_by: domain
-    current: true
-    signal_note: 'the provider''s own command-line tool on a package manager: distribution, not an integration;
-      lapsed = no release in 24 months or deprecated / disabled by the manager'
-    detected_by: sweep-official-clis.py
-    detected: '2026-10-20'
-  detected_by: sweep-official-clis.py
-  first_seen: '2026-10-20'
 - partner_name: A2A protocol (own Agent Card)
   partner: null
   partner_match: register
@@ -97,7 +67,7 @@ edges:
     matched_domain: perkoon.com
     matched_by: own-domain
     detected_by: sweep-ai-agents.py
-    detected: '2026-10-15'
+    detected: '2026-10-19'
   detected_by: sweep-ai-agents.py
   first_seen: '2026-10-15'
 - partner_name: a2aregistry.org
@@ -133,9 +103,39 @@ edges:
     sample_agents:
     - Perkoon — Agent Data Layer
     detected_by: sweep-ai-agents.py
-    detected: '2026-10-15'
+    detected: '2026-10-19'
   detected_by: sweep-ai-agents.py
   first_seen: '2026-10-15'
+- partner_name: npm registry
+  partner: npm
+  partner_match: register
+  type: register
+  direction: provider-built
+  category: official CLI (npm registry)
+  evidence: https://www.npmjs.com/package/perkoon
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: npm registry (public package index)
+    spec_file: null
+    packages:
+    - name: perkoon
+      version: 0.5.7
+      released: '2026-09-04'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/perkoon
+      cli: bin perkoon
+      repo_leg: domain:perkoon.com
+      publisher_leg: email:perkoon.com
+      matched_by: domain
+    current: true
+    signal_note: 'the provider''s own command-line tool on a package manager: distribution, not an integration;
+      lapsed = no release in 24 months or deprecated / disabled by the manager'
+    detected_by: sweep-official-clis.py
+    detected: '2026-10-20'
+  detected_by: sweep-official-clis.py
+  first_seen: '2026-10-20'
 generated: '2026-10-15'
 method: searched
 source:
@@ -143,14 +143,14 @@ source:
 checked:
 - https://a2aregistry.org/api/agents
 - https://api.nuget.org/v3
-- https://cdn.winget.microsoft.com/cache
 - https://crates.io/api/v1
-- https://formulae.brew.sh/api/cask.json
-- https://formulae.brew.sh/api/formula.json
-- https://github.com/ScoopInstaller/Extras
-- https://github.com/ScoopInstaller/Main
 - https://proxy.golang.org
 - https://pypi.org/pypi
 - https://registry.npmjs.org
 - https://repo1.maven.org/maven2
 - https://rubygems.org/api/v1
+- https://cdn.winget.microsoft.com/cache
+- https://formulae.brew.sh/api/cask.json
+- https://formulae.brew.sh/api/formula.json
+- https://github.com/ScoopInstaller/Extras
+- https://github.com/ScoopInstaller/Main
