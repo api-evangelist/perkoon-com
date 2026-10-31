@@ -64,5 +64,108 @@
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
 
-Perkoon is a company surfaced via the API Evangelist harvest backlog (source: a2a-registry) and added to the network as a stub for full-pipeline profiling.
-- https://perkoon.com/
+Perkoon is an account-less file-transfer service built for AI agents as much as for people, operated by MB "Perkunu simtas" in Lithuania. Small files upload once to free cloud delivery and return a durable ~48-hour share link (fire-and-forget); larger files stream directly between machines over WebRTC with no size limit, with perkoon.com doing signalling only. The same capability - create a transfer session, join it, check it - is projected over four entry points the provider documents for agents: an A2A agent card at /.well-known/agent-card.json (conformant to A2A 1.0.0, protocol 0.3.0, four skills, JSON-RPC at /a2a), an anonymous REST surface at /api/v1/sessions consumed by the first-party perkoon CLI (npm, also an importable JS library), a stdio MCP server (@perkoon/mcp: send_file, receive_file, check_session) and a Playwright-ready browser flow. It publishes llms.txt, a skillpm Agent Skill (perkoon-transfer) and per-IP rate limits inside the card itself. No OpenAPI, OAuth or event surface is published, and every HTML page - including the /automate guide and /pricing - sits behind a Cloudflare managed challenge for non-browser clients, while the card, llms.txt and robots.txt are served openly.
+
+**Areas:** File Transfer · P2P · WebRTC · AI Agents · A2A · MCP · CLI · Agent Skills · Cloud Storage · Developer Tools · Lithuania
+
+## Perkoon on APIs.io
+
+Everything profiled for Perkoon is published on APIs.io rather than in this repository. Start at the provider page — **[apis.io/providers/perkoon-com/](https://apis.io/providers/perkoon-com/)** — or go straight to one of the APIs or properties below.
+
+### APIs (3)
+
+- [Perkoon Agent Data Layer (A2A)](https://apis.io/apis/perkoon-com/perkoon-a2a-agent/) — Perkoon's agent-to-agent surface: an A2A agent card served at /.well-known/agent-card.json and the legacy /.well-known/agent.json (byte-identical, 200…
+- [Perkoon Sessions API](https://apis.io/apis/perkoon-com/perkoon-sessions-api/) — The anonymous REST surface under https://perkoon.com/api/v1 that every Perkoon client uses: POST /sessions (create, 10/min per IP), POST…
+- [Perkoon MCP Server](https://apis.io/apis/perkoon-com/perkoon-mcp-server/) — Official local stdio MCP server, @perkoon/mcp on npm (0.3.0, 2026-09-01), installed with npx -y @perkoon/mcp and named in the A2A card's resources[] and in…
+
+### Published properties
+
+Each property below is a page on APIs.io carrying the machine-readable artifact and what it says.
+
+#### MCP servers (1)
+
+Model Context Protocol servers that expose the API to agents.
+
+- [perkoon](https://apis.io/servers/perkoon-com/perkoon/)
+
+#### Security (2)
+
+Authentication, trust centre, and vulnerability disclosure.
+
+- [Perkoon Com Authentication](https://apis.io/security/perkoon-com/perkoon-com-authentication/)
+- [Perkoon Com Domain Security](https://apis.io/security/perkoon-com/perkoon-com-domain-security/)
+
+#### Plans and pricing (1)
+
+Published plans, tiers and prices.
+
+- [Perkoon Com Plans Pricing](https://apis.io/plans/perkoon-com/perkoon-com-plans-pricing/)
+
+#### Rate limits (1)
+
+Published request limits.
+
+- [Perkoon Com Rate Limits](https://apis.io/rate-limits/perkoon-com/perkoon-com-rate-limits/)
+
+## Where to find this API
+
+Links to the company's own pages. This repository publishes no copy of their specifications — the canonical document is theirs and lives at the URLs below.
+
+- [Website](https://perkoon.com/)
+- [Documentation](https://perkoon.com/automate)
+- [Getting started](https://perkoon.com/llms.txt)
+- [Pricing](https://perkoon.com/pricing)
+- [GitHub](https://github.com/Perkoon)
+
+## API Evangelist rating
+
+**Kin Score 27.6** — thin · rubric 0.24.0 · scored 2026-10-17
+
+| Facet | Score |
+|---|---|
+| Discoverability | 73.3 |
+| Contract quality | 0.0 |
+| Contract governance | 18.2 |
+| Operational transparency | 36.8 |
+| Developer ergonomics | 54.8 |
+| Access clarity | 10.5 |
+
+**Agent readiness 20.7** — agent-aware
+
+| Agent-readiness dimension | Result |
+|---|---|
+| Spec Presence | — |
+| Agentic Access | — |
+| Reversibility Documented | — |
+| MCP Server | documented (partial credit) |
+| Auth Clarity | bearer (partial credit) |
+| Idempotency | — |
+| Error Semantics | documented (partial credit) |
+| OpenAPI Examples | — |
+| Rate Limit Signal | documented (partial credit) |
+| Event Surface Described | — |
+| Agent Skills | yes |
+| Well Known Catalog | — |
+| Consent Identity | — |
+| Agent Card | conformant |
+| Dry Run Mode | — |
+| Delegated Identity | — |
+| Protected Resource Metadata | — |
+| Dynamic Client Registration | — |
+| Agentic Commerce | — |
+
+**Regulatory alignment 16.7** — Horizontal (data, software, accessibility, platform)
+
+The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/perkoon-com/](https://apis.io/providers/perkoon-com/).
+
+## How this profile is made
+
+API Evangelist profiles a company's public API surface the way a developer would find it: the website, developer portal and documentation, the specifications it publishes, its public repositories, and its pricing, status and changelog pages. From that it derives the properties above — contracts split per API, workflows, schemas, collections, governance rules, plans and rate limits — and scores them against the published [Kin Score rubric](https://github.com/api-evangelist/kin-score).
+
+The artifacts are published on [APIs.io](https://apis.io), not in this repository. This repository is the public record for Perkoon: the place to say something is wrong, missing or out of date, and to ask for a re-score or a removal.
+
+## Open an issue
+
+- **Something about this listing** — a wrong description, a missing API, a stale artifact or a question about the rating: [open an issue on this repository](https://github.com/api-evangelist/perkoon-com/issues/new).
+- **A new API, or one that is not in the catalog yet** — [submit it on APIs.io](https://apis.io/add/).
+- **Anything else** — [the APIs.io inbox](https://github.com/api-search/inbox/issues/new) or [info@apievangelist.com](mailto:info@apievangelist.com).
